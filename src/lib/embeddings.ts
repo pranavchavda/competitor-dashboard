@@ -1,10 +1,20 @@
 import OpenAI from 'openai'
 import { prisma } from './db'
 
-// Initialize OpenAI client
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-})
+// Initialize OpenAI client lazily
+let openai: OpenAI | null = null
+
+function getOpenAIClient(): OpenAI {
+  if (!openai) {
+    if (!process.env.OPENAI_API_KEY) {
+      throw new Error('OPENAI_API_KEY environment variable is required')
+    }
+    openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+    })
+  }
+  return openai
+}
 
 // Feature extraction for coffee equipment
 export function extractProductFeatures(product: {
@@ -126,7 +136,8 @@ export function extractProductFeatures(product: {
 // Create embeddings for product text
 export async function createEmbedding(text: string): Promise<number[]> {
   try {
-    const response = await openai.embeddings.create({
+    const client = getOpenAIClient()
+    const response = await client.embeddings.create({
       model: 'text-embedding-3-small',
       input: text.substring(0, 8000), // Limit text length
     })

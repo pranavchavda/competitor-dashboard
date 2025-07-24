@@ -10,8 +10,8 @@ export async function GET() {
     return NextResponse.json({
       brands,
       total: brands.length,
-      active: brands.filter(b => b.isActive).length,
-      monitored: brands.filter(b => b.enableMonitoring).length
+      active: brands.filter((b: any) => b.isActive).length,
+      monitored: brands.filter((b: any) => b.enableMonitoring).length
     })
   } catch (error) {
     console.error('Error fetching brands:', error)
