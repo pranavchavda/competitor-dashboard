@@ -183,6 +183,13 @@
         
         // Show initial message
         updateLoadingMessage();
+        
+        // Log environment info for debugging
+        console.log('🔧 Debug Info:');
+        console.log('  User Agent:', navigator.userAgent);
+        console.log('  Platform:', navigator.platform);
+        console.log('  Location:', window.location.href);
+        console.log('  Timestamp:', new Date().toISOString());
     </script>
 </body>
 </html>
