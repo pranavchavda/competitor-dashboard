@@ -91,22 +91,33 @@
             console.log(`Checking server (attempt ${attempts}/${maxAttempts})...`);
             updateLoadingMessage();
             
-            // Try multiple ways to detect if the server is ready
-            Promise.race([
-                fetch('http://localhost:3000'),
-                fetch('http://127.0.0.1:3000'),
-                // Also try a direct connection test
-                new Promise(resolve => {
-                    setTimeout(() => resolve({ ok: false }), 500);
-                })
-            ])
-                .then(response => {
-                    if (response && response.ok) {
+            // Try multiple addresses that work better in Windows webview
+            const urls = [
+                'http://127.0.0.1:3000',
+                'http://localhost:3000',
+                'http://0.0.0.0:3000'
+            ];
+            
+            // Try each URL with a timeout
+            Promise.allSettled(urls.map(url => 
+                fetch(url, { 
+                    method: 'GET',
+                    mode: 'no-cors',  // This helps with CORS issues in webview
+                    timeout: 2000 
+                }).catch(() => ({ ok: false }))
+            ))
+                .then(results => {
+                    // Check if any request succeeded
+                    const success = results.some(result => 
+                        result.status === 'fulfilled' && result.value && result.value.ok
+                    );
+                    
+                    if (success) {
                         console.log('Next.js server is ready, loading iframe...');
                         serverReady = true;
                         
-                        // Now set the iframe source since server is confirmed ready
-                        iframe.src = 'http://localhost:3000';
+                        // Use 127.0.0.1 which works better in Windows webview
+                        iframe.src = 'http://127.0.0.1:3000';
                         
                         // Wait a moment for iframe to load, then show it
                         setTimeout(() => {
@@ -114,7 +125,7 @@
                             loading.style.display = 'none';
                         }, 3000);
                     } else {
-                        throw new Error('Server not ready');
+                        throw new Error('Server not ready on any address');
                     }
                 })
                 .catch(error => {
@@ -129,10 +140,21 @@
                             <p>This can happen on slower systems or during first run.</p>
                             <button onclick="location.reload()" style="padding: 10px 20px; background: #3498db; color: white; border: none; border-radius: 4px; cursor: pointer; margin: 10px;">Retry</button>
                             <br>
-                            <button onclick="window.open('http://localhost:3000')" style="padding: 10px 20px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer;">Open in Browser</button>
+                            <button onclick="tryDifferentAddress()" style="padding: 10px 20px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; margin: 10px;">Try 127.0.0.1</button>
+                            <br>
+                            <button onclick="window.open('http://localhost:3000')" style="padding: 10px 20px; background: #17a2b8; color: white; border: none; border-radius: 4px; cursor: pointer;">Open in Browser</button>
                         `;
                     }
                 });
+        }
+        
+        function tryDifferentAddress() {
+            console.log('Trying 127.0.0.1 directly...');
+            iframe.src = 'http://127.0.0.1:3000';
+            setTimeout(() => {
+                iframe.classList.add('loaded');
+                loading.style.display = 'none';
+            }, 2000);
         }
         
         // Also listen for iframe load events as backup
@@ -148,7 +170,8 @@
         // We know from terminal output when server actually starts
         setTimeout(() => {
             console.log('Timeout approach: assuming server is ready based on timing');
-            iframe.src = 'http://localhost:3000';
+            // Use 127.0.0.1 which works better in Windows webview
+            iframe.src = 'http://127.0.0.1:3000';
             setTimeout(() => {
                 iframe.classList.add('loaded');
                 loading.style.display = 'none';

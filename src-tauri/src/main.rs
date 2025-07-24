@@ -48,10 +48,11 @@ fn start_nextjs_server() -> Result<String, String> {
                 }
             }
             
-            // Start the server
+            // Start the server with explicit host binding for Windows compatibility
             match Command::new("npm")
                 .args(&["run", "start"])
                 .current_dir(&dir)
+                .env("HOSTNAME", "0.0.0.0")  // Bind to all interfaces for Windows webview compatibility
                 .stdout(Stdio::piped())
                 .stderr(Stdio::piped())
                 .spawn()
