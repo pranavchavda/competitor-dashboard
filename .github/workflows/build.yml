@@ -45,8 +45,8 @@ jobs:
         with:
           name: windows-electron-binaries
           path: |
-            dist-electron/*.exe
-            dist-electron/*.msi
+            dist/*.exe
+            dist/*.msi
 
       - name: Upload artifacts (macOS)
         if: matrix.os == 'macos-latest'
@@ -54,7 +54,7 @@ jobs:
         with:
           name: macos-electron-binaries
           path: |
-            dist-electron/*.dmg
+            dist/*.dmg
 
       - name: Upload artifacts (Linux)
         if: matrix.os == 'ubuntu-22.04'
@@ -62,5 +62,5 @@ jobs:
         with:
           name: linux-electron-binaries
           path: |
-            dist-electron/*.AppImage
-            dist-electron/*.deb
+            dist/*.AppImage
+            dist/*.deb
