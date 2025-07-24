@@ -61,7 +61,9 @@
       ".next/**/*",
       "public/**/*",
       "node_modules/**/*",
-      "package.json"
+      "package.json",
+      "!node_modules/@img/sharp-darwin-*",
+      "!node_modules/@img/sharp-win32-*"
     ],
     "mac": {
       "category": "public.app-category.business",
@@ -95,6 +97,13 @@
           "arch": ["x64"]
         }
       ]
-    }
+    },
+    "asarUnpack": [
+      "node_modules/next/**/*",
+      "node_modules/@next/**/*",
+      "node_modules/.bin/**/*",
+      ".next/**/*",
+      "package.json"
+    ]
   }
 }

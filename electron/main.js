@@ -62,44 +62,39 @@ async function startNextServer() {
   return new Promise((resolve, reject) => {
     console.log('Starting Next.js server...');
     
-    // Build first
-    console.log('Building Next.js app...');
-    const buildProcess = spawn('npm', ['run', 'build'], {
+    // In packaged app, find the correct working directory
+    let workingDir = process.cwd();
+    if (app.isPackaged) {
+      // In packaged apps, we need to use the app.asar.unpacked directory
+      workingDir = path.join(process.resourcesPath, 'app.asar.unpacked');
+      console.log('Packaged app detected, using directory:', workingDir);
+    }
+    
+    console.log('Starting pre-built Next.js server from:', workingDir);
+    
+    // Use node directly to start Next.js server
+    const nextBin = path.join(workingDir, 'node_modules', '.bin', 'next');
+    
+    nextServer = spawn('node', [nextBin, 'start'], {
       stdio: 'inherit',
-      shell: true
-    });
-
-    buildProcess.on('close', (code) => {
-      if (code !== 0) {
-        reject(new Error(`Build failed with code ${code}`));
-        return;
+      shell: false,
+      cwd: workingDir,
+      env: {
+        ...process.env,
+        PORT: '3000',
+        NODE_ENV: 'production'
       }
-
-      console.log('Build completed, starting server...');
-      
-      // Start server
-      nextServer = spawn('npm', ['run', 'start'], {
-        stdio: 'inherit',
-        shell: true,
-        env: {
-          ...process.env,
-          PORT: '3000'
-        }
-      });
-
-      nextServer.on('error', (err) => {
-        reject(err);
-      });
-
-      // Give server time to start
-      setTimeout(() => {
-        resolve();
-      }, 5000);
     });
 
-    buildProcess.on('error', (err) => {
+    nextServer.on('error', (err) => {
+      console.error('Failed to start Next.js server:', err);
       reject(err);
     });
+
+    // Give server more time to start since we're in a packaged environment
+    setTimeout(() => {
+      resolve();
+    }, 8000);
   });
 }
 
