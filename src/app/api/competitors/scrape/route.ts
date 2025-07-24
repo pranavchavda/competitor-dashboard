@@ -124,6 +124,8 @@ async function storeProductInDB(product: ShopifyProduct, source: string) {
     // Generate embeddings if OpenAI API key is available
     let embeddings: { titleEmbedding: string; featuresEmbedding: string; extractedFeatures: string } | null = null
     
+    // Temporarily comment out embedding generation to rule out silent failures
+    /*
     try {
       if (process.env.OPENAI_API_KEY) {
         embeddings = await createProductEmbeddings({
@@ -135,10 +137,11 @@ async function storeProductInDB(product: ShopifyProduct, source: string) {
         })
         console.log(`✓ Generated embeddings for product: ${product.title}`)
       }
-    } catch (error) {
-      console.error(`Error generating embeddings for product ${product.id}:`, error)
+    } catch (error: any) {
+      console.error(`Error generating embeddings for product ${product.id}:`, error.message || error)
       // Continue without embeddings
     }
+    */
     
     const dbProduct = await prisma.product.upsert({
       where: {
@@ -236,15 +239,16 @@ async function storeProductInDB(product: ShopifyProduct, source: string) {
     }
     
     return dbProduct
-  } catch (error) {
-    console.error('Error storing product in DB:', error)
+  } catch (error: any) {
+    console.error('Error storing product in DB:', error.message || error)
     throw error
   }
 }
 
 async function scrapeShopifyCollection(baseUrl: string, collectionHandle: string) {
+  const url = `${baseUrl}/collections/${collectionHandle}/products.json`
+  console.log(`Attempting to scrape collection: ${url}`)
   try {
-    const url = `${baseUrl}/collections/${collectionHandle}/products.json`
     const response = await axios.get(url, {
       timeout: 10000,
       headers: {
@@ -252,16 +256,32 @@ async function scrapeShopifyCollection(baseUrl: string, collectionHandle: string
       }
     })
     
+    console.log(`Successfully scraped collection: ${url}, found ${response.data.products?.length || 0} products`)
+    console.log(`Raw products from ${url}:`, JSON.stringify(response.data.products, null, 2))
     return response.data.products || []
-  } catch (error) {
-    console.error(`Error scraping ${baseUrl}/collections/${collectionHandle}:`, error)
+  } catch (error: any) {
+    console.error(`Error scraping collection ${url}:`)
+    if (error.response) {
+      // The request was made and the server responded with a status code
+      // that falls out of the range of 2xx
+      console.error('  Status:', error.response.status)
+      console.error('  Data:', error.response.data)
+      console.error('  Headers:', error.response.headers)
+    } else if (error.request) {
+      // The request was made but no response was received
+      console.error('  No response received:', error.request)
+    } else {
+      // Something happened in setting up the request that triggered an Error
+      console.error('  Error message:', error.message)
+    }
     return []
   }
 }
 
 async function scrapeShopifySearch(baseUrl: string, searchQuery: string) {
+  const url = `${baseUrl}/search.json?q=${encodeURIComponent(searchQuery)}&options%5Bprefix%5D=last`
+  console.log(`Attempting to search: ${url}`)
   try {
-    const url = `${baseUrl}/search.json?q=${encodeURIComponent(searchQuery)}&options%5Bprefix%5D=last`
     const response = await axios.get(url, {
       timeout: 10000,
       headers: {
@@ -269,9 +289,20 @@ async function scrapeShopifySearch(baseUrl: string, searchQuery: string) {
       }
     })
     
+    console.log(`Successfully searched: ${url}, found ${response.data.results?.length || 0} products`)
+    console.log(`Raw products from ${url}:`, JSON.stringify(response.data.results, null, 2))
     return response.data.results || []
-  } catch (error) {
-    console.error(`Error searching ${baseUrl} for ${searchQuery}:`, error)
+  } catch (error: any) {
+    console.error(`Error searching ${url}:`)
+    if (error.response) {
+      console.error('  Status:', error.response.status)
+      console.error('  Data:', error.response.data)
+      console.error('  Headers:', error.response.headers)
+    } else if (error.request) {
+      console.error('  No response received:', error.request)
+    } else {
+      console.error('  Error message:', error.message)
+    }
     return []
   }
 }
@@ -361,16 +392,26 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+  console.log('POST /api/competitors/scrape received.')
   try {
     const body = await request.json()
+    console.log('Request body:', body)
     const { competitors = Object.keys(COMPETITORS) } = body
     
     const results = []
     
-    for (const competitor of competitors) {
-      if (!COMPETITORS[competitor as keyof typeof COMPETITORS]) continue
+    for (const competitorKey of competitors) {
+      console.log(`Processing competitor key from frontend: ${competitorKey}`)
+      const competitorSource = COMPETITOR_SOURCE_MAP[competitorKey as keyof typeof COMPETITOR_SOURCE_MAP]
       
-      const competitorSource = COMPETITOR_SOURCE_MAP[competitor as keyof typeof COMPETITOR_SOURCE_MAP]
+      if (!competitorSource || !COMPETITORS[competitorSource as keyof typeof COMPETITORS]) {
+        console.warn(`Skipping unknown or unmapped competitor: ${competitorKey} (mapped to ${competitorSource})`)
+        continue
+      }
+      
+      console.log(`Mapped ${competitorKey} to internal source: ${competitorSource}`)
+      
+      // Create scrape job
       
       // Create scrape job
       const scrapeJob = await prisma.scrapeJob.create({
@@ -387,124 +428,140 @@ export async function POST(request: Request) {
       const errors: string[] = []
       
       try {
-        const baseUrl = COMPETITORS[competitor as keyof typeof COMPETITORS]
-        const collections = COMPETITOR_COLLECTIONS[competitor as keyof typeof COMPETITOR_COLLECTIONS] || ['espresso-machines']
-        const searches = COMPETITOR_SEARCHES[competitor as keyof typeof COMPETITOR_SEARCHES] || []
+        const baseUrl = COMPETITORS[competitorSource as keyof typeof COMPETITORS]
+        const collections = COMPETITOR_COLLECTIONS[competitorSource as keyof typeof COMPETITOR_COLLECTIONS] || []
+        const searches = COMPETITOR_SEARCHES[competitorSource as keyof typeof COMPETITOR_SEARCHES] || []
         
+        console.log(`Base URL: ${baseUrl}`)
+        console.log(`Collections to scrape:`, collections)
+        console.log(`Searches to scrape:`, searches)
+
         // Scrape collections
-        for (const collection of collections) {
-          console.log(`Scraping ${competitor} - collection: ${collection}`)
-          try {
-            const products = await scrapeShopifyCollection(baseUrl, collection)
-            
-            const filteredProducts = products.filter((product: ShopifyProduct) => {
-              const productType = product.product_type?.toLowerCase() || ''
-              const title = product.title?.toLowerCase() || ''
+        if (collections.length > 0) {
+          console.log(`Starting collection scraping for ${competitor}`)
+          for (const collection of collections) {
+            console.log(`Scraping ${competitor} - collection: ${collection}`)
+            try {
+              const products = await scrapeShopifyCollection(baseUrl, collection)
               
-              return productType.includes('espresso') || 
-                     productType.includes('grinder') ||
-                     title.includes('espresso') || 
-                     title.includes('grinder')
-            })
-            
-            totalFound += filteredProducts.length
-            
-            // Store products in database
-            for (const product of filteredProducts) {
-              try {
-                const existingProduct = await prisma.product.findUnique({
-                  where: {
-                    externalId_source: {
-                      externalId: product.id.toString(),
-                      source: competitorSource
+              const filteredProducts = products.filter((product: ShopifyProduct) => {
+                const productType = product.product_type?.toLowerCase() || ''
+                const title = product.title?.toLowerCase() || ''
+                
+                return productType.includes('espresso') || 
+                       productType.includes('grinder') ||
+                       title.includes('espresso') || 
+                       title.includes('grinder')
+              })
+              
+              totalFound += filteredProducts.length
+              console.log(`Filtered ${filteredProducts.length} products from collection ${collection}`)
+              
+              // Store products in database
+              for (const product of filteredProducts) {
+                try {
+                  const existingProduct = await prisma.product.findUnique({
+                    where: {
+                      externalId_source: {
+                        externalId: product.id.toString(),
+                        source: competitorSource
+                      }
                     }
+                  })
+                  
+                  await storeProductInDB(product, competitorSource)
+                  
+                  if (existingProduct) {
+                    totalUpdated++
+                  } else {
+                    totalCreated++
                   }
-                })
-                
-                await storeProductInDB(product, competitorSource)
-                
-                if (existingProduct) {
-                  totalUpdated++
-                } else {
-                  totalCreated++
+                } catch (productError) {
+                  errors.push(`Error storing product ${product.id}: ${productError}`)
+                  console.error(`Error storing product ${product.id}:`, productError)
                 }
-              } catch (productError) {
-                errors.push(`Error storing product ${product.id}: ${productError}`)
               }
+              
+              results.push({
+                competitor,
+                collection,
+                products: filteredProducts.length,
+                total: filteredProducts.length,
+                scraped_at: new Date().toISOString()
+              })
+              
+            } catch (collectionError) {
+              errors.push(`Error scraping collection ${collection}: ${collectionError}`)
+              console.error(`Error scraping collection ${collection}:`, collectionError)
             }
             
-            results.push({
-              competitor,
-              collection,
-              products: filteredProducts.length,
-              total: filteredProducts.length,
-              scraped_at: new Date().toISOString()
-            })
-            
-          } catch (collectionError) {
-            errors.push(`Error scraping collection ${collection}: ${collectionError}`)
+            // Add delay between requests to be respectful
+            await new Promise(resolve => setTimeout(resolve, 1000))
           }
-          
-          // Add delay between requests to be respectful
-          await new Promise(resolve => setTimeout(resolve, 1000))
         }
         
         // Scrape searches
-        for (const searchTerm of searches) {
-          console.log(`Searching ${competitor} - search: ${searchTerm}`)
-          try {
-            const products = await scrapeShopifySearch(baseUrl, searchTerm)
-            
-            const filteredProducts = products.filter((product: ShopifyProduct) => {
-              const productType = product.product_type?.toLowerCase() || ''
-              const title = product.title?.toLowerCase() || ''
+        if (searches.length > 0) {
+          console.log(`Starting search scraping for ${competitor}`)
+          for (const searchTerm of searches) {
+            console.log(`Searching ${competitor} - search: ${searchTerm}`)
+            try {
+              const products = await scrapeShopifySearch(baseUrl, searchTerm)
               
-              return productType.includes('espresso') || 
-                     productType.includes('grinder') ||
-                     title.includes('espresso') || 
-                     title.includes('grinder')
-            })
-            
-            totalFound += filteredProducts.length
-            
-            // Store products in database
-            for (const product of filteredProducts) {
-              try {
-                const existingProduct = await prisma.product.findUnique({
-                  where: {
-                    externalId_source: {
-                      externalId: product.id.toString(),
-                      source: competitorSource
+              const filteredProducts = products.filter((product: ShopifyProduct) => {
+                const productType = product.product_type?.toLowerCase() || ''
+                const title = product.title?.toLowerCase() || ''
+                
+                return productType.includes('espresso') || 
+                       productType.includes('grinder') ||
+                       title.includes('espresso') || 
+                       title.includes('grinder')
+              })
+              
+              totalFound += filteredProducts.length
+              console.log(`Filtered ${filteredProducts.length} products from search ${searchTerm}`)
+              
+              // Store products in database
+              for (const product of filteredProducts) {
+                try {
+                  const existingProduct = await prisma.product.findUnique({
+                    where: {
+                      externalId_source: {
+                        externalId: product.id.toString(),
+                        source: competitorSource
+                      }
                     }
+                  })
+                  
+                  await storeProductInDB(product, competitorSource)
+                  
+                  if (existingProduct) {
+                    totalUpdated++
+                  } else {
+                    totalCreated++
                   }
-                })
-                
-                await storeProductInDB(product, competitorSource)
-                
-                if (existingProduct) {
-                  totalUpdated++
-                } else {
-                  totalCreated++
+                } catch (productError) {
+                  errors.push(`Error storing product ${product.id}: ${productError}`)
+                  console.error(`Error storing product ${product.id}:`, productError)
                 }
-              } catch (productError) {
-                errors.push(`Error storing product ${product.id}: ${productError}`)
               }
+              
+              results.push({
+                competitor,
+                collection: `search-${searchTerm}`,
+                products: filteredProducts.length,
+                total: filteredProducts.length,
+                scraped_at: new Date().toISOString()
+              })
+              
+            } catch (searchError) {
+              errors.push(`Error searching for ${searchTerm}: ${searchError}`)
+              console.error(`Error searching for ${searchTerm}:`, searchError)
             }
             
-            results.push({
-              competitor,
-              collection: `search-${searchTerm}`,
-              products: filteredProducts.length,
-              total: filteredProducts.length,
-              scraped_at: new Date().toISOString()
-            })
-            
-          } catch (searchError) {
-            errors.push(`Error searching for ${searchTerm}: ${searchError}`)
+            // Add delay between requests to be respectful
+            await new Promise(resolve => setTimeout(resolve, 1000))
           }
-          
-          // Add delay between requests to be respectful
-          await new Promise(resolve => setTimeout(resolve, 1000))
         }
         
         // Update scrape job with success
@@ -533,6 +590,7 @@ export async function POST(request: Request) {
             completedAt: new Date()
           }
         })
+        console.error(`Critical error during scraping for a competitor:`, competitorError)
         throw competitorError
       }
     }
@@ -542,10 +600,10 @@ export async function POST(request: Request) {
       total_scraped: results.reduce((sum, r) => sum + r.total, 0),
       message: 'Data stored in database successfully'
     })
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error in bulk competitor scrape:', error)
     return NextResponse.json(
-      { error: 'Failed to bulk scrape competitor data' },
+      { error: 'Failed to bulk scrape competitor data', details: error.message || 'Unknown error' },
       { status: 500 }
     )
   }

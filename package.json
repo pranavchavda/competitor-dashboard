@@ -1,21 +1,33 @@
 {
   "name": "competitor-dash",
   "version": "0.1.0",
+  "main": "electron.js",
   "private": true,
-  "main": "electron/main.js",
+  "build": {
+    "files": [
+      "electron.js",
+      "node_modules/**/*",
+      ".next/**/*",
+      "public/**/*",
+      "package.json"
+    ],
+    "asarUnpack": [
+      "**/*.node",
+      ".next/**/*"
+    ]
+  },
   "scripts": {
     "dev": "next dev -p 3000",
-    "build": "prisma generate && next build",
+    "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "electron": "electron .",
-    "electron:dev": "NODE_ENV=development electron .",
-    "electron:pack": "electron-builder",
-    "electron:dist": "npm run build && electron-builder",
     "tauri": "tauri",
     "tauri:dev": "tauri dev",
     "tauri:build": "tauri build",
-    "tauri:build:debug": "tauri build --features debug-console"
+    "electron:dev": "concurrently \"npm:dev\" \"npm:electron\"",
+    "electron": "electron .",
+    "electron:pack": "npm run build && electron-builder --dir",
+    "electron:dist": "npm run build && electron-builder"
   },
   "dependencies": {
     "@headlessui/react": "^2.2.4",
@@ -39,8 +51,9 @@
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",
-    "electron": "^37.2.4",
-    "electron-builder": "^26.0.12",
+    "concurrently": "^8.2.2",
+    "electron": "^31.0.2",
+    "electron-builder": "^25.0.0",
     "eslint": "^8",
     "eslint-config-next": "14.2.3",
     "postcss": "^8",
@@ -49,59 +62,5 @@
     "prettier-plugin-tailwindcss": "^0.6.11",
     "tailwindcss": "^4.1.7",
     "typescript": "^5"
-  },
-  "build": {
-    "appId": "com.idrinkcoffee.competitordash",
-    "productName": "Competitor Dashboard",
-    "directories": {
-      "output": "dist-electron"
-    },
-    "files": [
-      "electron/**/*",
-      ".next/**/*",
-      "public/**/*",
-      "node_modules/**/*",
-      "package.json",
-      "!node_modules/@img/sharp-darwin-*",
-      "!node_modules/@img/sharp-win32-*"
-    ],
-    "mac": {
-      "category": "public.app-category.business",
-      "target": [
-        {
-          "target": "dmg",
-          "arch": ["universal"]
-        }
-      ]
-    },
-    "win": {
-      "target": [
-        {
-          "target": "nsis",
-          "arch": ["x64"]
-        },
-        {
-          "target": "portable",
-          "arch": ["x64"]
-        }
-      ]
-    },
-    "linux": {
-      "target": [
-        {
-          "target": "AppImage",
-          "arch": ["x64"]
-        },
-        {
-          "target": "deb",
-          "arch": ["x64"]
-        }
-      ]
-    },
-    "asarUnpack": [
-      "node_modules/**/*",
-      ".next/**/*",
-      "package.json"
-    ]
   }
 }
