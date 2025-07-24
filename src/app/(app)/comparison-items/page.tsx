@@ -111,7 +111,7 @@ export default function ComparisonItemsPage() {
   }, [])
 
   const getUniqueValues = (items: any[], field: string) => {
-    const values = items.map(item => item[field]).filter(Boolean)
+    const values = items.map((item: any) => item[field]).filter(Boolean)
     return [...new Set(values)].sort()
   }
 

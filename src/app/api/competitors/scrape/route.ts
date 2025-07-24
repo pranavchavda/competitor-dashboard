@@ -86,7 +86,7 @@ async function storeProductInDB(product: ShopifyProduct, source: string) {
     const features = {
       tags: product.tags || [],
       productType: product.product_type,
-      options: product.options?.map(opt => ({ name: opt.name, values: opt.values })) || []
+      options: product.options?.map((opt: any) => ({ name: opt.name, values: opt.values })) || []
     }
     
     // Smart vendor detection - extract brand from title if vendor is incorrect

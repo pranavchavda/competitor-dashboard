@@ -59,7 +59,7 @@ export async function GET() {
       },
       competitor_breakdown: competitorBreakdown,
       sample_competitor_products: sampleCompetitorProducts,
-      sample_matches: sampleMatches.map(match => ({
+      sample_matches: sampleMatches.map((match: any) => ({
         id: match.id,
         idc_product: match.idcProduct.title,
         idc_price: match.idcProduct.price,

@@ -1,0 +1,52 @@
+
+> competitor-dash@0.1.0 build
+> next build
+
+   ▲ Next.js 15.4.3
+   - Environments: .env
+
+   Creating an optimized production build ...
+ ✓ Compiled successfully in 2000ms
+   Linting and checking validity of types ...
+   Collecting page data ...
+   Generating static pages (0/23) ...
+   Generating static pages (5/23) 
+   Generating static pages (11/23) 
+   Generating static pages (17/23) 
+ ✓ Generating static pages (23/23)
+   Finalizing page optimization ...
+   Collecting build traces ...
+
+Route (app)                                 Size  First Load JS
+┌ ○ /                                    5.23 kB         115 kB
+├ ○ /_not-found                            994 B         101 kB
+├ ○ /alerts                              5.09 kB         115 kB
+├ ƒ /api/brands                            150 B        99.8 kB
+├ ƒ /api/brands/[id]                       150 B        99.8 kB
+├ ƒ /api/brands/initialize                 150 B        99.8 kB
+├ ƒ /api/competitors/fix-vendors           150 B        99.8 kB
+├ ƒ /api/competitors/products              150 B        99.8 kB
+├ ƒ /api/competitors/scrape                150 B        99.8 kB
+├ ƒ /api/dashboard/stats                   150 B        99.8 kB
+├ ƒ /api/debug/products                    150 B        99.8 kB
+├ ƒ /api/embeddings/update                 150 B        99.8 kB
+├ ƒ /api/products/idc                      150 B        99.8 kB
+├ ƒ /api/products/match                    150 B        99.8 kB
+├ ○ /comparison-items                    9.18 kB         119 kB
+├ ○ /competitors                         5.48 kB         115 kB
+├ ○ /events                              2.67 kB         174 kB
+├ ƒ /events/[id]                         1.33 kB         173 kB
+├ ○ /help                                7.13 kB         117 kB
+├ ○ /orders                              1.33 kB         173 kB
+├ ƒ /orders/[id]                         5.05 kB         177 kB
+├ ○ /price-comparison                    8.39 kB         118 kB
+└ ○ /settings                            5.82 kB         115 kB
++ First Load JS shared by all            99.7 kB
+  ├ chunks/4bd1b696-cf72ae8a39fa05aa.js  54.1 kB
+  ├ chunks/964-dfbecab604bf7a42.js       43.6 kB
+  └ other shared chunks (total)          1.92 kB
+
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+

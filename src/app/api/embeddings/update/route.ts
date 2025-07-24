@@ -49,7 +49,7 @@ export async function POST(request: Request) {
     if (dryRun) {
       return NextResponse.json({
         message: `Dry run: Found ${productsToUpdate.length} products that need embedding updates`,
-        products: productsToUpdate.map(p => ({
+        products: productsToUpdate.map((p: any) => ({
           id: p.id,
           title: p.title,
           source: p.source,
@@ -66,7 +66,7 @@ export async function POST(request: Request) {
     }
     
     // Update embeddings in batches
-    const productIds = productsToUpdate.map(p => p.id)
+    const productIds = productsToUpdate.map((p: any) => p.id)
     const results = await batchUpdateEmbeddings(productIds, 5, 200) // 5 per batch, 200ms delay
     
     return NextResponse.json({
@@ -148,7 +148,7 @@ export async function GET(request: Request) {
         features: totalProducts > 0 ? (withFeaturesEmbeddings / totalProducts * 100).toFixed(1) : '0',
         complete: totalProducts > 0 ? (withBothEmbeddings / totalProducts * 100).toFixed(1) : '0'
       },
-      needing_updates_by_source: bySource.map(s => ({
+      needing_updates_by_source: bySource.map((s: any) => ({
         source: s.source,
         count: s._count.id
       })),

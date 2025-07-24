@@ -239,7 +239,7 @@ export async function GET(request: Request) {
     ])
     
     // Transform to frontend format
-    const transformedMatches = matches.map(match => ({
+    const transformedMatches = matches.map((match: any) => ({
       id: match.id,
       idc_product: {
         id: match.idcProduct.id,

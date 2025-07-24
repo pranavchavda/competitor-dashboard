@@ -108,7 +108,7 @@ export async function GET(request: Request) {
       }
     })
     
-    const summary = summaryStats.map(stat => ({
+    const summary = summaryStats.map((stat: any) => ({
       source: stat.source,
       source_name: COMPETITOR_NAMES[stat.source as keyof typeof COMPETITOR_NAMES] || stat.source,
       product_count: stat._count.id,

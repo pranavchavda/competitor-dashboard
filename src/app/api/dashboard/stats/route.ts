@@ -158,7 +158,7 @@ export async function GET() {
     return NextResponse.json({
       stats,
       competitor_status: competitorStatus,
-      recent_alerts: recentAlerts.map(alert => ({
+      recent_alerts: recentAlerts.map((alert: any) => ({
         id: alert.id,
         product_title: alert.title,
         competitor: alert.source || 'Unknown',

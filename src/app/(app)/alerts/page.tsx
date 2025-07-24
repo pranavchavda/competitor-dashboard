@@ -53,7 +53,7 @@ export default function AlertsPage() {
   }
 
   const updateAlertStatus = (alertId: number, newStatus: 'acknowledged' | 'resolved') => {
-    setAlerts(prev => prev.map(alert => 
+    setAlerts(prev => prev.map((alert: any) => 
       alert.id === alertId ? { ...alert, status: newStatus } : alert
     ))
   }
