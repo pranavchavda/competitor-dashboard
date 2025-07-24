@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Competitor Dashboard</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f5;
+            overflow: hidden;
+        }
+        .loading {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #f5f5f5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            z-index: 9999;
+        }
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #3498db;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        iframe {
+            width: 100vw;
+            height: 100vh;
+            border: none;
+            display: none;
+        }
+        iframe.loaded {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="loading" id="loading">
+        <div class="spinner"></div>
+        <h2>Starting Competitor Dashboard...</h2>
+        <p>Please wait while the application loads.</p>
+    </div>
+
+    <iframe id="app-frame"></iframe>
+
+    <script>
+        let attempts = 0;
+        const maxAttempts = 90; // Try for 90 seconds (Next.js can take time to build)
+        const iframe = document.getElementById('app-frame');
+        const loading = document.getElementById('loading');
+        let serverReady = false;
+        
+        function updateLoadingMessage() {
+            const loadingDiv = document.getElementById('loading');
+            const spinner = loadingDiv.querySelector('.spinner');
+            const h2 = loadingDiv.querySelector('h2');
+            const p = loadingDiv.querySelector('p');
+            
+            if (attempts <= 10) {
+                h2.textContent = 'Starting Competitor Dashboard...';
+                p.textContent = 'Initializing the application...';
+            } else if (attempts <= 30) {
+                h2.textContent = 'Building Application...';
+                p.textContent = 'Next.js is compiling the application. This may take a moment...';
+            } else if (attempts <= 60) {
+                h2.textContent = 'Almost Ready...';
+                p.textContent = 'Final preparations in progress...';
+            } else {
+                h2.textContent = 'Taking longer than usual...';
+                p.textContent = 'The application is still starting up. Please wait...';
+            }
+        }
+        
+        function checkServer() {
+            attempts++;
+            console.log(`Checking server (attempt ${attempts}/${maxAttempts})...`);
+            updateLoadingMessage();
+            
+            // Try multiple ways to detect if the server is ready
+            Promise.race([
+                fetch('http://localhost:3000'),
+                fetch('http://127.0.0.1:3000'),
+                // Also try a direct connection test
+                new Promise(resolve => {
+                    setTimeout(() => resolve({ ok: false }), 500);
+                })
+            ])
+                .then(response => {
+                    if (response && response.ok) {
+                        console.log('Next.js server is ready, loading iframe...');
+                        serverReady = true;
+                        
+                        // Now set the iframe source since server is confirmed ready
+                        iframe.src = 'http://localhost:3000';
+                        
+                        // Wait a moment for iframe to load, then show it
+                        setTimeout(() => {
+                            iframe.classList.add('loaded');
+                            loading.style.display = 'none';
+                        }, 3000);
+                    } else {
+                        throw new Error('Server not ready');
+                    }
+                })
+                .catch(error => {
+                    console.log('Server not ready yet:', error.message);
+                    if (attempts < maxAttempts) {
+                        setTimeout(checkServer, 1000); // Check again in 1 second
+                    } else {
+                        loading.innerHTML = `
+                            <div class="spinner" style="display: none;"></div>
+                            <h2>Application Startup Timeout</h2>
+                            <p>The Next.js server took longer than expected to start (${maxAttempts} seconds).</p>
+                            <p>This can happen on slower systems or during first run.</p>
+                            <button onclick="location.reload()" style="padding: 10px 20px; background: #3498db; color: white; border: none; border-radius: 4px; cursor: pointer; margin: 10px;">Retry</button>
+                            <br>
+                            <button onclick="window.open('http://localhost:3000')" style="padding: 10px 20px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer;">Open in Browser</button>
+                        `;
+                    }
+                });
+        }
+        
+        // Also listen for iframe load events as backup
+        iframe.onload = function() {
+            console.log('Iframe loaded successfully');
+            if (serverReady) {
+                iframe.classList.add('loaded');
+                loading.style.display = 'none';
+            }
+        };
+        
+        // Since server detection is problematic in webview, just wait for a reasonable time
+        // We know from terminal output when server actually starts
+        setTimeout(() => {
+            console.log('Timeout approach: assuming server is ready based on timing');
+            iframe.src = 'http://localhost:3000';
+            setTimeout(() => {
+                iframe.classList.add('loaded');
+                loading.style.display = 'none';
+            }, 2000);
+        }, 60000); // Wait 60 seconds for Next.js to build and start (it's slow!)
+        
+        // Also keep the detection as backup
+        setTimeout(checkServer, 65000);
+        
+        // Show initial message
+        updateLoadingMessage();
+    </script>
+</body>
+</html>

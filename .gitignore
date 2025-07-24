@@ -41,3 +41,7 @@ coverage/
 
 # Generated
 /src/generated/prisma
+
+# Tauri build artifacts
+src-tauri/target/
+src-tauri/gen/
