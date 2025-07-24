@@ -59,42 +59,69 @@ function createWindow() {
 }
 
 async function startNextServer() {
-  return new Promise((resolve, reject) => {
+  return new Promise(async (resolve, reject) => {
     console.log('Starting Next.js server...');
     
-    // In packaged app, find the correct working directory
-    let workingDir = process.cwd();
-    if (app.isPackaged) {
-      // In packaged apps, we need to use the app.asar.unpacked directory
-      workingDir = path.join(process.resourcesPath, 'app.asar.unpacked');
-      console.log('Packaged app detected, using directory:', workingDir);
-    }
-    
-    console.log('Starting pre-built Next.js server from:', workingDir);
-    
-    // Use node directly to start Next.js server
-    const nextBin = path.join(workingDir, 'node_modules', '.bin', 'next');
-    
-    nextServer = spawn('node', [nextBin, 'start'], {
-      stdio: 'inherit',
-      shell: false,
-      cwd: workingDir,
-      env: {
-        ...process.env,
-        PORT: '3000',
-        NODE_ENV: 'production'
+    try {
+      // In packaged app, find the correct working directory
+      let workingDir = process.cwd();
+      if (app.isPackaged) {
+        // In packaged apps, we need to use the app.asar.unpacked directory
+        workingDir = path.join(process.resourcesPath, 'app.asar.unpacked');
+        console.log('Packaged app detected, using directory:', workingDir);
       }
-    });
+      
+      console.log('Starting pre-built Next.js server from:', workingDir);
+      
+      // Set working directory for Next.js
+      process.chdir(workingDir);
+      
+      // For packaged apps, let's just use the simple spawn approach but with a different strategy
+      console.log('Using simple server approach for packaged app...');
+      
+      // Just start the server using the Next.js binary directly
+      nextServer = spawn('node', ['-e', `
+        const next = require('next');
+        const dev = false;
+        const port = 3000;
+        const app = next({ dev, dir: '${workingDir}' });
+        
+        app.prepare().then(() => {
+          const server = require('http').createServer(app.getRequestHandler());
+          server.listen(port, '0.0.0.0', () => {
+            console.log('Next.js server ready on port', port);
+          });
+        }).catch(err => {
+          console.error('Next.js preparation failed:', err);
+          process.exit(1);
+        });
+      `], {
+        stdio: 'inherit',
+        shell: false,
+        cwd: workingDir,
+        env: {
+          ...process.env,
+          PORT: '3000',
+          NODE_ENV: 'production'
+        }
+      });
 
-    nextServer.on('error', (err) => {
-      console.error('Failed to start Next.js server:', err);
-      reject(err);
-    });
+      nextServer.on('error', (err) => {
+        console.error('Failed to start Next.js server:', err);
+        reject(err);
+      });
 
-    // Give server more time to start since we're in a packaged environment
-    setTimeout(() => {
-      resolve();
-    }, 8000);
+      // Wait for server to start
+      setTimeout(() => {
+        console.log('✅ Next.js server should be ready');
+        resolve();
+      }, 10000);
+      
+      
+    } catch (error) {
+      console.error('Error starting Next.js server:', error);
+      reject(error);
+    }
   });
 }
 

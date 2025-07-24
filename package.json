@@ -99,9 +99,7 @@
       ]
     },
     "asarUnpack": [
-      "node_modules/next/**/*",
-      "node_modules/@next/**/*",
-      "node_modules/.bin/**/*",
+      "node_modules/**/*",
       ".next/**/*",
       "package.json"
     ]
