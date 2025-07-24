@@ -113,8 +113,8 @@ function calculateSimilarity(product1: Product, product2: Product): number {
 }
 
 function calculateStringSimilarity(str1: string, str2: string): number {
-  const words1 = str1.split(' ').filter(w => w.length > 2)
-  const words2 = str2.split(' ').filter(w => w.length > 2)
+  const words1 = str1.split(' ').filter((w: string) => w.length > 2)
+  const words2 = str2.split(' ').filter((w: string) => w.length > 2)
   
   if (words1.length === 0 || words2.length === 0) return 0
   
@@ -429,7 +429,7 @@ export async function POST(request: Request) {
       
       // Find matches only within the same brand for more accurate comparisons
       const idcBrand = extractBrand(idcProd.title).toLowerCase()
-      const matchingCompetitorProducts = competitorProducts.filter(comp => 
+      const matchingCompetitorProducts = competitorProducts.filter((comp: any) => 
         comp.price && extractBrand(comp.title).toLowerCase() === idcBrand
       )
       
