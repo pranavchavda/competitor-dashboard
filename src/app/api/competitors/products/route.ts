@@ -63,7 +63,7 @@ export async function GET(request: Request) {
     ])
     
     // Transform products for frontend
-    const transformedProducts = products.map(product => {
+    const transformedProducts = products.map((product: any) => {
       const recentHistory = product.priceHistory[0]
       const previousHistory = product.priceHistory[1]
       
