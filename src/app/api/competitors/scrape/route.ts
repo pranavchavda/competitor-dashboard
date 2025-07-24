@@ -124,8 +124,7 @@ async function storeProductInDB(product: ShopifyProduct, source: string) {
     // Generate embeddings if OpenAI API key is available
     let embeddings: { titleEmbedding: string; featuresEmbedding: string; extractedFeatures: string } | null = null
     
-    // Temporarily comment out embedding generation to rule out silent failures
-    /*
+    // Generate embeddings if OpenAI API key is available
     try {
       if (process.env.OPENAI_API_KEY) {
         embeddings = await createProductEmbeddings({
@@ -141,7 +140,6 @@ async function storeProductInDB(product: ShopifyProduct, source: string) {
       console.error(`Error generating embeddings for product ${product.id}:`, error.message || error)
       // Continue without embeddings
     }
-    */
     
     const dbProduct = await prisma.product.upsert({
       where: {
@@ -160,7 +158,7 @@ async function storeProductInDB(product: ShopifyProduct, source: string) {
         available: product.available,
         imageUrl: product.images?.[0]?.src || null,
         url: `${COMPETITORS[source as keyof typeof COMPETITORS]}/products/${product.handle}`,
-        features: embeddings?.extractedFeatures || JSON.stringify(features),
+        features: (embeddings as any)?.extractedFeatures || JSON.stringify(features),
         titleEmbedding: embeddings?.titleEmbedding,
         featuresEmbedding: embeddings?.featuresEmbedding,
         lastScrapedAt: new Date(),
@@ -178,7 +176,7 @@ async function storeProductInDB(product: ShopifyProduct, source: string) {
         available: product.available,
         imageUrl: product.images?.[0]?.src || null,
         url: `${COMPETITORS[source as keyof typeof COMPETITORS]}/products/${product.handle}`,
-        features: embeddings?.extractedFeatures || JSON.stringify(features),
+        features: (embeddings as any)?.extractedFeatures || JSON.stringify(features),
         titleEmbedding: embeddings?.titleEmbedding,
         featuresEmbedding: embeddings?.featuresEmbedding,
         lastScrapedAt: new Date()
@@ -404,7 +402,7 @@ export async function POST(request: Request) {
       console.log(`Processing competitor key from frontend: ${competitorKey}`)
       const competitorSource = COMPETITOR_SOURCE_MAP[competitorKey as keyof typeof COMPETITOR_SOURCE_MAP]
       
-      if (!competitorSource || !COMPETITORS[competitorSource as keyof typeof COMPETITOR_SOURCE_MAP]) {
+      if (!competitorSource || !COMPETITORS[competitorSource as keyof typeof COMPETITORS]) {
         console.warn(`Skipping unknown or unmapped competitor: ${competitorKey} (mapped to ${competitorSource})`)
         continue
       }
