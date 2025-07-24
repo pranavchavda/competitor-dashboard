@@ -1,0 +1,11 @@
+/home/pranav/idc/competitordash/src-tauri/target/x86_64-pc-windows-msvc/release/deps/libc-f392051dbf2a83f5.d: /home/pranav/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/libc-0.2.174/src/lib.rs /home/pranav/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/libc-0.2.174/src/macros.rs /home/pranav/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/libc-0.2.174/src/primitives.rs /home/pranav/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/libc-0.2.174/src/windows/mod.rs /home/pranav/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/libc-0.2.174/src/windows/msvc/mod.rs
+
+/home/pranav/idc/competitordash/src-tauri/target/x86_64-pc-windows-msvc/release/deps/liblibc-f392051dbf2a83f5.rlib: /home/pranav/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/libc-0.2.174/src/lib.rs /home/pranav/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/libc-0.2.174/src/macros.rs /home/pranav/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/libc-0.2.174/src/primitives.rs /home/pranav/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/libc-0.2.174/src/windows/mod.rs /home/pranav/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/libc-0.2.174/src/windows/msvc/mod.rs
+
+/home/pranav/idc/competitordash/src-tauri/target/x86_64-pc-windows-msvc/release/deps/liblibc-f392051dbf2a83f5.rmeta: /home/pranav/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/libc-0.2.174/src/lib.rs /home/pranav/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/libc-0.2.174/src/macros.rs /home/pranav/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/libc-0.2.174/src/primitives.rs /home/pranav/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/libc-0.2.174/src/windows/mod.rs /home/pranav/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/libc-0.2.174/src/windows/msvc/mod.rs
+
+/home/pranav/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/libc-0.2.174/src/lib.rs:
+/home/pranav/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/libc-0.2.174/src/macros.rs:
+/home/pranav/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/libc-0.2.174/src/primitives.rs:
+/home/pranav/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/libc-0.2.174/src/windows/mod.rs:
+/home/pranav/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/libc-0.2.174/src/windows/msvc/mod.rs:

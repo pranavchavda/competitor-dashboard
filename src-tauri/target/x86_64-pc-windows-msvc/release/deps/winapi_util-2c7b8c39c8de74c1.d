@@ -1,0 +1,11 @@
+/home/pranav/idc/competitordash/src-tauri/target/x86_64-pc-windows-msvc/release/deps/winapi_util-2c7b8c39c8de74c1.d: /home/pranav/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/winapi-util-0.1.9/src/lib.rs /home/pranav/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/winapi-util-0.1.9/src/console.rs /home/pranav/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/winapi-util-0.1.9/src/file.rs /home/pranav/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/winapi-util-0.1.9/src/sysinfo.rs /home/pranav/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/winapi-util-0.1.9/src/win.rs
+
+/home/pranav/idc/competitordash/src-tauri/target/x86_64-pc-windows-msvc/release/deps/libwinapi_util-2c7b8c39c8de74c1.rlib: /home/pranav/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/winapi-util-0.1.9/src/lib.rs /home/pranav/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/winapi-util-0.1.9/src/console.rs /home/pranav/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/winapi-util-0.1.9/src/file.rs /home/pranav/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/winapi-util-0.1.9/src/sysinfo.rs /home/pranav/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/winapi-util-0.1.9/src/win.rs
+
+/home/pranav/idc/competitordash/src-tauri/target/x86_64-pc-windows-msvc/release/deps/libwinapi_util-2c7b8c39c8de74c1.rmeta: /home/pranav/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/winapi-util-0.1.9/src/lib.rs /home/pranav/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/winapi-util-0.1.9/src/console.rs /home/pranav/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/winapi-util-0.1.9/src/file.rs /home/pranav/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/winapi-util-0.1.9/src/sysinfo.rs /home/pranav/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/winapi-util-0.1.9/src/win.rs
+
+/home/pranav/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/winapi-util-0.1.9/src/lib.rs:
+/home/pranav/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/winapi-util-0.1.9/src/console.rs:
+/home/pranav/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/winapi-util-0.1.9/src/file.rs:
+/home/pranav/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/winapi-util-0.1.9/src/sysinfo.rs:
+/home/pranav/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/winapi-util-0.1.9/src/win.rs:
