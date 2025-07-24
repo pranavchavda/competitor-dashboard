@@ -61,13 +61,13 @@ const COMPETITORS = {
 }
 
 const COMPETITOR_COLLECTIONS = {
-  'home-coffee-solutions': ['ecm', 'profitec', 'eureka'],
-  'kitchen-barista': ['profitec'], // Collections that exist
-  'cafe-liegeois': ['ecm', 'profitec', 'eureka']
+  'home_coffee_solutions': ['ecm', 'profitec', 'eureka'],
+  'kitchen_barista': ['profitec'], // Collections that exist
+  'cafe_liegeois': ['ecm', 'profitec', 'eureka']
 }
 
 const COMPETITOR_SEARCHES = {
-  'kitchen-barista': ['ecm', 'eureka'] // Use search for brands without collections
+  'kitchen_barista': ['ecm', 'eureka'] // Use search for brands without collections
 }
 
 const COMPETITOR_SOURCE_MAP = {
@@ -404,15 +404,20 @@ export async function POST(request: Request) {
       console.log(`Processing competitor key from frontend: ${competitorKey}`)
       const competitorSource = COMPETITOR_SOURCE_MAP[competitorKey as keyof typeof COMPETITOR_SOURCE_MAP]
       
-      if (!competitorSource || !COMPETITORS[competitorSource as keyof typeof COMPETITORS]) {
+      if (!competitorSource || !COMPETITORS[competitorSource as keyof typeof COMPETITOR_SOURCE_MAP]) {
         console.warn(`Skipping unknown or unmapped competitor: ${competitorKey} (mapped to ${competitorSource})`)
         continue
       }
       
       console.log(`Mapped ${competitorKey} to internal source: ${competitorSource}`)
       
-      // Create scrape job
-      
+      // Delete existing products for this competitor to ensure fresh data
+      console.log(`Deleting existing products for ${competitorSource}...`)
+      const deletedCount = await prisma.product.deleteMany({
+        where: { source: competitorSource }
+      })
+      console.log(`Deleted ${deletedCount.count} existing products for ${competitorSource}`)
+
       // Create scrape job
       const scrapeJob = await prisma.scrapeJob.create({
         data: {
@@ -438,9 +443,9 @@ export async function POST(request: Request) {
 
         // Scrape collections
         if (collections.length > 0) {
-          console.log(`Starting collection scraping for ${competitor}`)
+          console.log(`Starting collection scraping for ${competitorKey}`)
           for (const collection of collections) {
-            console.log(`Scraping ${competitor} - collection: ${collection}`)
+            console.log(`Scraping ${competitorKey} - collection: ${collection}`)
             try {
               const products = await scrapeShopifyCollection(baseUrl, collection)
               
@@ -483,7 +488,7 @@ export async function POST(request: Request) {
               }
               
               results.push({
-                competitor,
+                competitor: competitorKey,
                 collection,
                 products: filteredProducts.length,
                 total: filteredProducts.length,
@@ -502,9 +507,9 @@ export async function POST(request: Request) {
         
         // Scrape searches
         if (searches.length > 0) {
-          console.log(`Starting search scraping for ${competitor}`)
+          console.log(`Starting search scraping for ${competitorKey}`)
           for (const searchTerm of searches) {
-            console.log(`Searching ${competitor} - search: ${searchTerm}`)
+            console.log(`Searching ${competitorKey} - search: ${searchTerm}`)
             try {
               const products = await scrapeShopifySearch(baseUrl, searchTerm)
               
@@ -547,7 +552,7 @@ export async function POST(request: Request) {
               }
               
               results.push({
-                competitor,
+                competitor: competitorKey,
                 collection: `search-${searchTerm}`,
                 products: filteredProducts.length,
                 total: filteredProducts.length,
