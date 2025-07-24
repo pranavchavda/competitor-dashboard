@@ -1,60 +1,54 @@
 # Competitor Price Monitoring Dashboard - Claude Code Instructions
 
-This is a Next.js 15.4.3 web application that monitors competitor pricing for iDrinkCoffee.com across three major competitors. The system scrapes competitor data, matches products using similarity algorithms, and provides real-time price comparison insights.
+This is a Next.js 15.4.3 desktop application built with Tauri that monitors competitor pricing for iDrinkCoffee.com across major coffee equipment retailers. The system scrapes competitor data, matches products using similarity algorithms, and provides real-time price comparison insights through a modern desktop interface.
 
 ## Project Overview
 
-**Purpose**: Monitor and analyze competitor pricing for espresso machines and grinders to maintain competitive advantage for iDrinkCoffee.com.
+**Purpose**: Monitor and analyze competitor pricing for premium espresso machines and grinders to maintain competitive advantage for iDrinkCoffee.com.
 
-**Competitors Monitored**:
-- Home Coffee Solutions (homecoffeesolutions.com) - 398 products
-- The Kitchen Barista (thekitchenbarista.com) - 269 products  
-- Cafe Liegeois (cafeliegeois.ca) - 72 products
+**Technology Stack**:
+- **Frontend**: Next.js 15.4.3 with TypeScript
+- **UI**: Catalyst UI Kit (Tailwind CSS components)
+- **Desktop**: Tauri (Rust-based framework)
+- **Database**: SQLite with Prisma ORM
+- **AI**: OpenAI embeddings for semantic product matching
+- **Build**: GitHub Actions for multi-platform releases
+
+## Competitors Monitored
+
+- **Home Coffee Solutions** (homecoffeesolutions.com) - ~398 products
+- **The Kitchen Barista** (thekitchenbarista.com) - ~269 products
+- **Cafe Liegeois** (cafeliegeois.ca) - ~72 products
 
 **Target Brands**: ECM, Profitec, Eureka (premium coffee equipment brands)
 
-## Current State & Architecture
+## Application Architecture
 
-### ✅ **Completed Features**
-
-**Frontend (Next.js + Catalyst UI):**
+### Frontend Pages
 - **Dashboard** (`/`): Real-time metrics, competitor status, recent alerts
 - **Competitors** (`/competitors`): Scraping controls, product listings per competitor
 - **Price Comparison** (`/price-comparison`): Product matching with confidence scoring
 - **Alerts** (`/alerts`): Alert management with filtering and status updates
+- **Settings** (`/settings`): OpenAI API key configuration
 
-**Backend APIs:**
+### Backend APIs
 - `/api/products/idc` - Fetches iDrinkCoffee products via Algolia search
 - `/api/competitors/scrape` - Scrapes competitor data using Shopify JSON endpoints
 - `/api/products/match` - Product matching using similarity algorithms
 - `/api/dashboard/stats` - Dashboard metrics and alerts data
+- `/api/embeddings/update` - Updates OpenAI embeddings for products
 
-**Web Scraping System:**
-- **Smart Strategy**: Uses Shopify JSON endpoints (`/collections/{brand}/products.json`)
-- **Hybrid Approach**: Collections for most competitors, search API for Kitchen Barista
-- **Rate Limited**: Respectful delays between requests
-- **Brand-Focused**: Targets ECM, Profitec, Eureka specifically
+## Data Sources
 
-### 🚧 **Current Issues & Next Steps**
+### iDrinkCoffee Products (Algolia)
+The app fetches product data from iDrinkCoffee's Algolia search index:
+```javascript
+// Public API endpoint - no authentication required
+https://M71W3IRVX3-dsn.algolia.net/1/indexes/idc_products/query
+```
 
-1. **Price Comparison Not Working**: "Run Price Analysis" shows no results
-   - Fixed API calls but needs testing
-   - Added debugging logs to trace data flow
-
-2. **Product Matching Accuracy**: Current algorithm is basic keyword-based
-   - Need semantic similarity using OpenAI embeddings
-   - Store embeddings in SQLite for fast querying
-   - Extract features (PID, E61, dual boiler, etc.)
-
-3. **Data Display Issues**: Some vendor names and pricing showing incorrectly
-   - Price normalization fixed but needs verification
-   - Vendor field correctly shows brand (ECM, Profitec, etc.)
-
-## Technical Implementation
-
-### **Scraping Strategy**
-
-**Collections (Brand-Specific):**
+### Competitor Scraping Strategy
+**Smart Brand-Focused Approach**:
 ```
 Home Coffee Solutions & Cafe Liegeois:
 ├── /collections/ecm/products.json
@@ -67,188 +61,169 @@ Kitchen Barista (Hybrid):
 └── /search.json?q=eureka (159 products)
 ```
 
-**Data Normalization:**
-- Extracts price from `product.variants[0].price`
-- Converts string prices to numbers
-- Filters for espresso machines and grinders
-- Adds competitor source metadata
+**Key Features**:
+- Uses Shopify JSON endpoints (faster than HTML scraping)
+- Brand-specific collection targeting
+- Rate-limited and respectful scraping
+- Automatic price normalization
 
-### **Product Matching Algorithm (Current)**
+## Product Matching System
+
+### Current Algorithm
 ```
 Brand Matching: 40% weight
 Title Similarity: 30% weight  
 Product Type: 20% weight
 Price Proximity: 10% weight
-Confidence Threshold: 30%
+Confidence Threshold: 30% (configurable: 70%, 80%, 90%)
 ```
 
-### **Planned Embeddings System**
+### Planned Enhancements (Embeddings)
+- **Semantic Similarity**: OpenAI text-embedding-3-small
+- **Feature Extraction**: PID controllers, E61 groups, dual boilers, etc.
+- **SQLite Storage**: Fast similarity queries with indexed embeddings
+- **Advanced Matching**: Brand + model number + feature recognition
 
-**Database Schema (SQLite):**
-```sql
-CREATE TABLE products (
-  id TEXT PRIMARY KEY,
-  source TEXT NOT NULL,
-  title TEXT NOT NULL,
-  vendor TEXT,
-  price REAL,
-  sku TEXT,
-  features TEXT,
-  embedding BLOB,
-  created_at DATETIME
-);
+## Configuration
 
-CREATE TABLE product_matches (
-  idc_product_id TEXT,
-  competitor_product_id TEXT,
-  similarity_score REAL,
-  price_difference REAL
-);
+### Environment Variables
+```bash
+# Required for embeddings (optional for basic functionality)
+OPENAI_API_KEY=sk-***
+
+# Database (auto-generated SQLite file)
+DATABASE_URL=file:./competitor_products.db
 ```
 
-**Feature Extraction:**
-- Boiler types (dual/single boiler)
-- Controls (PID, E61 group)
-- Grinder types (burr, conical, flat)
-- Materials (stainless steel, brass)
-- Model numbers and SKUs
+### Settings Management
+The app stores settings in `/settings` page:
+- **OpenAI API Key**: For semantic product matching
+- **Confidence Thresholds**: 70%, 80%, 90% matching levels
+- **Scraping Intervals**: Configurable update frequencies
 
 ## Development Workflow
 
-### **Environment Setup**
+### Setup Commands
 ```bash
-# Required environment variables
-SHOPIFY_SHOP_URL=https://idrinkcoffee.myshopify.com
-SHOPIFY_ACCESS_TOKEN=shpat_***
+# Install dependencies
+npm install
 
-# For embeddings (when implemented)
-OPENAI_API_KEY=sk-***
-DATABASE_URL=./competitor_products.db
+# Generate Prisma client
+npx prisma generate
+
+# Run development server
+npm run dev
+
+# Build for production
+npm run build
+
+# Build desktop app
+npm run tauri:build
 ```
 
-### **Development Commands**
+### Desktop Development
 ```bash
-npm run dev      # Start development server (http://localhost:3001)
-npm run build    # Build for production
-npm run lint     # Run linting
+# Run in desktop mode (opens Tauri window)
+npm run tauri:dev
+
+# Build for current platform
+npm run tauri:build
+
+# Build for specific platform (via GitHub Actions)
+git push origin main  # Triggers multi-platform builds
 ```
 
-### **File Structure**
-```
-src/
-├── app/
-│   ├── (app)/                    # Main app pages
-│   │   ├── page.tsx             # Dashboard
-│   │   ├── competitors/         # Competitor management
-│   │   ├── price-comparison/    # Product matching
-│   │   └── alerts/              # Alert management
-│   └── api/                     # Backend API routes
-│       ├── products/idc/        # IDC product fetching
-│       ├── competitors/scrape/  # Competitor scraping
-│       ├── products/match/      # Product matching
-│       └── dashboard/stats/     # Dashboard data
-├── components/                  # Catalyst UI components
-└── styles/                     # Tailwind CSS
-```
+## Key Business Logic
 
-## Key Data Sources
+### Price Analysis
+- **Positive price difference** = iDC has lower prices (competitive advantage)
+- **Negative price difference** = competitor has lower prices (action needed)
+- **MAP Violations**: Automated detection of Minimum Advertised Price violations
+- **Revenue at Risk**: Calculated from price difference × estimated sales volume
 
-### **iDrinkCoffee Products (Algolia)**
-```javascript
-fetch('https://M71W3IRVX3-dsn.algolia.net/1/indexes/idc_products/query', {
-  headers: {
-    "X-Algolia-API-Key": "f4080b5c70ce601c85706444675a8a04",
-    "X-Algolia-Application-Id": "M71W3IRVX3"
-  },
-  body: JSON.stringify({ params: "filters=product_type:espresso OR product_type:grinder" })
-})
-```
+### Alert System
+- **Price drops by competitors** (opportunity to raise prices)
+- **Price increases by competitors** (opportunity to gain market share)  
+- **New products from competitors** (market intelligence)
+- **MAP violations** (pricing policy enforcement)
 
-### **Competitor Endpoints**
-```
-Home Coffee Solutions:
-https://homecoffeesolutions.com/collections/profitec/products.json
+## Technical Implementation Details
 
-Kitchen Barista:  
-https://thekitchenbarista.com/collections/profitec/products.json
-https://thekitchenbarista.com/search.json?q=ecm
+### Scraping Best Practices
+- **Rate Limiting**: 2-3 second delays between requests
+- **User Agent Rotation**: Respectful bot identification
+- **Error Handling**: Graceful 404 and timeout handling
+- **Data Validation**: Price format verification before storage
 
-Cafe Liegeois:
-https://cafeliegeois.ca/collections/profitec/products.json
+### TypeScript Configuration
+The app uses strict TypeScript checking, especially important for Windows builds:
+```typescript
+// Always use explicit types for callback parameters
+products.map((product: any) => ({ ... }))
+products.filter((item: any) => item.condition)
+
+// Prisma client lazy initialization
+let prisma: PrismaClient | null = null
+function getPrismaClient() {
+  if (!prisma) prisma = new PrismaClient()
+  return prisma
+}
 ```
 
-## Business Logic
+## Deployment & Distribution
 
-### **Price Analysis**
-- Positive price difference = iDC has lower prices (competitive advantage)
-- Negative price difference = competitor has lower prices (need action)
-- Confidence scoring helps prioritize reliable matches
-- Focus on premium brands where margins matter most
+### GitHub Actions CI/CD
+Automated builds for:
+- **Linux**: AppImage, Deb, RPM packages
+- **Windows**: MSI installer + standalone EXE
+- **macOS**: Universal DMG (Intel + Apple Silicon)
 
-### **Alert System**
-- Price drops by competitors (opportunity to raise prices)
-- Price increases by competitors (opportunity to gain market share)
-- New products from competitors (market intelligence)
-- Out of stock situations (opportunity to capture demand)
+### Installation Methods
+```bash
+# Linux AppImage
+chmod +x competitor-dashboard.AppImage
+./competitor-dashboard.AppImage
 
-## Known Issues & Debugging
+# Windows MSI
+# Double-click installer or use silent install:
+msiexec /i competitor-dashboard.msi /quiet
 
-### **Current Debugging Points**
-1. Check browser console logs when running "Price Analysis"
-2. Verify competitor scraping returns products with correct price format
-3. Ensure IDC product filtering works with Algolia
-4. Test product matching algorithm with real data
+# macOS DMG
+# Mount and drag to Applications folder
+```
 
-### **Common Problems**
-- **$NaN prices**: Fixed by proper price extraction from variants
-- **No matches found**: Usually due to API errors or data format issues
-- **Slow scraping**: Rate limited to be respectful to competitor servers
-- **Empty collections**: Some competitors may not have brand-specific collections
+## Troubleshooting
 
-## Future Enhancements
+### Common Issues
+1. **Build Failures**: Run `npx prisma generate` before building
+2. **Empty Results**: Check Algolia API connectivity
+3. **Scraping Errors**: Verify competitor website structure hasn't changed
+4. **Matching Issues**: Adjust confidence thresholds in settings
 
-### **Phase 1: Embeddings (High Priority)**
-- Implement OpenAI embeddings for semantic product matching
-- SQLite database for fast similarity queries
-- Feature extraction for better matching accuracy
+### Debug Endpoints
+- `/api/debug/products` - Product matching statistics
+- `/api/embeddings/update?dry_run=true` - Test embedding updates
+- Browser DevTools → Network tab - API call monitoring
 
-### **Phase 2: Automation**
-- Scheduled scraping (every 6-24 hours)
-- Automated alerts via email/Slack
-- Price change trend analysis
+## Security & Compliance
 
-### **Phase 3: Intelligence**
-- Market share analysis
-- Pricing strategy recommendations
-- Competitor inventory tracking
-- Seasonal pricing patterns
+### Data Protection
+- **Local Storage**: All data stored locally in SQLite
+- **No Personal Data**: Only public product information
+- **API Keys**: Stored locally, never transmitted to external services
 
-## Important Notes
+### Ethical Scraping
+- **robots.txt Compliance**: Respects crawler guidelines
+- **Rate Limiting**: Conservative request intervals
+- **User Agent**: Honest bot identification
+- **Terms of Service**: Compliant with public data access
 
-- **Rate Limiting**: Always include delays between scraping requests
-- **Error Handling**: Gracefully handle 404s and timeout errors
-- **Data Quality**: Validate price formats and product data before processing
-- **Respectful Scraping**: Use appropriate user agents and respect robots.txt
-- **Security**: Never commit API keys or sensitive data
+## Important Development Notes
 
-## Troubleshooting Guide
+- **Windows Builds**: Require stricter TypeScript checking - always add explicit types
+- **Prisma**: Must run `prisma generate` before building
+- **Tauri**: Uses Rust backend with Node.js frontend bridge
+- **Desktop Distribution**: No code signing implemented yet (users may see security warnings)
+- **Database**: SQLite file auto-created on first run, no manual setup required
 
-**If scraping fails:**
-1. Check if competitor website structure changed
-2. Verify collection names still exist
-3. Test individual product JSON endpoints
-4. Check for rate limiting or IP blocks
-
-**If matching is poor:**
-1. Review confidence thresholds
-2. Check data quality (missing fields, wrong formats)
-3. Test with known product pairs manually
-4. Consider implementing embeddings for better accuracy
-
-**If performance is slow:**
-1. Optimize database queries
-2. Add caching for frequently accessed data
-3. Implement background job processing
-4. Consider pagination for large datasets
-
-This system provides a solid foundation for competitive intelligence and pricing strategy for iDrinkCoffee.com's premium coffee equipment business.
+This system provides comprehensive competitive intelligence while maintaining ethical data collection practices and delivering actionable insights for iDrinkCoffee.com's pricing strategy.
