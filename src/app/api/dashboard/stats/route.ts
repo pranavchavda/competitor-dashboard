@@ -76,18 +76,18 @@ export async function GET() {
     })
 
     // Filter for MAP violations (same logic as Price Comparison frontend)
-    const mapViolations = relevantMatches.filter(match => match.isMapViolation)
+    const mapViolations = relevantMatches.filter((match: any) => match.isMapViolation)
     const mapViolationsCount = mapViolations.length
 
     // Calculate total revenue at risk from violations 
     const revenueAtRisk = mapViolations
-      .filter(violation => violation.violationAmount)
-      .reduce((sum, violation) => {
+      .filter((violation: any) => violation.violationAmount)
+      .reduce((sum: number, violation: any) => {
         return sum + (violation.violationAmount || 0)
       }, 0)
 
     // Find worst offender (retailer with most violations) from the same filtered data
-    const violationsBySource = mapViolations.reduce((acc: {[key: string]: number}, violation) => {
+    const violationsBySource = mapViolations.reduce((acc: {[key: string]: number}, violation: any) => {
       acc[violation.source] = (acc[violation.source] || 0) + 1
       return acc
     }, {})
