@@ -11,13 +11,16 @@ export default defineConfig({
   },
   server: {
     port: 3000,
+    host: '0.0.0.0',
+    hmr: {
+      clientPort: 443,
+    },
     proxy: {
       '/api': {
         target: 'http://localhost:3005',
         changeOrigin: true,
       },
     },
-    
   },
   build: {
     outDir: 'dist',
