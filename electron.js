@@ -157,18 +157,31 @@ async function startNextServer() {
           const sqlite3 = require('sqlite3').verbose();
           const db = new sqlite3.Database(dbPath);
           
-          const recreateSchemaSQL = `
-            -- Drop all existing tables
-            DROP TABLE IF EXISTS MapViolationHistory;
-            DROP TABLE IF EXISTS PriceHistory;
-            DROP TABLE IF EXISTS ProductMatch;
-            DROP TABLE IF EXISTS ProductVariant;
-            DROP TABLE IF EXISTS Alert;
-            DROP TABLE IF EXISTS ScrapeJob;
-            DROP TABLE IF EXISTS Brand;
-            DROP TABLE IF EXISTS Product;
+          // Check if database needs schema update
+          const schemaVersion = 1; // Increment this when schema changes
+          
+          db.get("SELECT name FROM sqlite_master WHERE type='table' AND name='_schema_version'", (err, row) => {
+            const needsRecreate = err || !row;
             
-            -- Create tables with complete schema
+            if (needsRecreate) {
+              debugLog('Database needs schema recreation');
+              const recreateSchemaSQL = `
+                -- Drop all existing tables
+                DROP TABLE IF EXISTS MapViolationHistory;
+                DROP TABLE IF EXISTS PriceHistory;
+                DROP TABLE IF EXISTS ProductMatch;
+                DROP TABLE IF EXISTS ProductVariant;
+                DROP TABLE IF EXISTS Alert;
+                DROP TABLE IF EXISTS ScrapeJob;
+                DROP TABLE IF EXISTS Brand;
+                DROP TABLE IF EXISTS Product;
+                DROP TABLE IF EXISTS _schema_version;
+                
+                -- Create schema version table
+                CREATE TABLE _schema_version (version INTEGER);
+                INSERT INTO _schema_version (version) VALUES (${schemaVersion});
+                
+                -- Create tables with complete schema
             CREATE TABLE IF NOT EXISTS "Product" (
               "id" TEXT NOT NULL PRIMARY KEY,
               "externalId" TEXT NOT NULL,
@@ -337,13 +350,18 @@ async function startNextServer() {
             CREATE INDEX IF NOT EXISTS "Brand_enableMonitoring_idx" ON "Brand"("enableMonitoring");
           `;
           
-          db.exec(recreateSchemaSQL, (err) => {
-            if (err) {
-              debugLog('Database schema recreation error', err.message);
+              db.exec(recreateSchemaSQL, (err) => {
+                if (err) {
+                  debugLog('Database schema recreation error', err.message);
+                } else {
+                  debugLog('Database schema recreated successfully - fresh start');
+                }
+                db.close();
+              });
             } else {
-              debugLog('Database schema recreated successfully - fresh start');
+              debugLog('Database schema is up to date - data preserved');
+              db.close();
             }
-            db.close();
           });
           
           debugLog('Database initialization completed');
