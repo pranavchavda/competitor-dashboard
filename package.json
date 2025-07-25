@@ -6,15 +6,35 @@
   "build": {
     "files": [
       "electron.js",
-      "node_modules/**/*",
       ".next/**/*",
       "public/**/*",
-      "package.json"
+      "package.json",
+      "prisma/**/*",
+      "node_modules/next/**/*",
+      "node_modules/react/**/*",
+      "node_modules/react-dom/**/*",
+      "node_modules/@prisma/**/*",
+      "node_modules/prisma/**/*",
+      "node_modules/sqlite3/**/*"
     ],
     "asarUnpack": [
       "**/*.node",
-      ".next/**/*"
-    ]
+      ".next/**/*",
+      "node_modules/**/*"
+    ],
+    "extraResources": [
+      {
+        "from": "node_modules/.prisma",
+        "to": "node_modules/.prisma"
+      },
+      {
+        "from": "prisma/dev.db",
+        "to": "prisma-template.db"
+      }
+    ],
+    "directories": {
+      "output": "dist"
+    }
   },
   "scripts": {
     "dev": "next dev -p 3000",
@@ -43,7 +63,8 @@
     "openai": "^5.10.2",
     "prisma": "^6.12.0",
     "react": "^18",
-    "react-dom": "^18"
+    "react-dom": "^18",
+    "sqlite3": "^5.1.7"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.1.7",
