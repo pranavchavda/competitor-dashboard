@@ -15,7 +15,11 @@
     "tauri:build": "tauri build",
     "electron:dev": "concurrently \"pnpm run server:dev\" \"electron .\"",
     "electron:build": "pnpm run build && electron-builder",
-    "electron:dist": "electron-builder --publish=never"
+    "electron:dist": "electron-builder --publish=never",
+    "pkg:build": "pnpm run build && pkg real-standalone.cjs --targets node18-win-x64,node18-macos-x64,node18-linux-x64 --out-path dist-pkg",
+    "pkg:build-win": "pnpm run build && pkg real-standalone.cjs --targets node18-win-x64 --out-path dist-pkg",
+    "pkg:build-mac": "pnpm run build && pkg real-standalone.cjs --targets node18-macos-x64 --out-path dist-pkg",
+    "pkg:build-linux": "pnpm run build && pkg real-standalone.cjs --targets node18-linux-x64 --out-path dist-pkg"
   },
   "dependencies": {
     "@headlessui/react": "^2.2.4",
@@ -105,5 +109,20 @@
       ],
       "icon": "src-tauri/icons/128x128.png"
     }
+  },
+  "pkg": {
+    "assets": [
+      "dist/**/*",
+      "server/**/*",
+      "node_modules/@prisma/client/**/*",
+      "prisma/schema.prisma",
+      ".env"
+    ],
+    "targets": [
+      "node18-win-x64",
+      "node18-macos-x64", 
+      "node18-linux-x64"
+    ],
+    "outputPath": "dist-pkg"
   }
 }

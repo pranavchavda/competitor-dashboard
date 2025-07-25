@@ -7,6 +7,11 @@ import { createServer } from 'http'
 import { WebSocketServer, WebSocket } from 'ws'
 import fs from 'fs'
 import path from 'path'
+import { fileURLToPath } from 'url'
+
+// ES module equivalent of __dirname
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
 
 const app = express()
 const port = process.env.PORT || 3005
@@ -22,6 +27,15 @@ app.use(cors({
   optionsSuccessStatus: 200
 }))
 app.use(express.json())
+
+// Serve static files from dist directory
+const distPath = path.join(__dirname, '../dist')
+if (fs.existsSync(distPath)) {
+  app.use(express.static(distPath))
+  console.log(`📁 Serving static files from: ${distPath}`)
+} else {
+  console.warn(`⚠️  Static files directory not found: ${distPath}`)
+}
 
 // WebSocket connection handling
 const activeConnections = new Set<WebSocket>()
@@ -621,14 +635,29 @@ app.get('/api/products/idc', async (req, res) => {
       facetFilters: [targetBrands.map((brand: string) => `vendor:${brand.trim()}`)]
     }
     
+    // Get Algolia API key from environment or settings
+    let algoliaApiKey = process.env.ALGOLIA_API_KEY
+    
+    if (!algoliaApiKey) {
+      try {
+        const settingsFile = path.join(process.cwd(), 'settings.json')
+        if (fs.existsSync(settingsFile)) {
+          const fileSettings = JSON.parse(fs.readFileSync(settingsFile, 'utf8'))
+          algoliaApiKey = fileSettings.algolia_api_key
+        }
+      } catch (error) {
+        console.warn('Could not read Algolia API key from settings:', error)
+      }
+    }
+    
     // Try to fetch from real Algolia if API key is provided
-    if (process.env.ALGOLIA_API_KEY) {
+    if (algoliaApiKey) {
       try {
         const algoliaResponse = await axios.post(algoliaUrl, algoliaQuery, {
           headers: {
             'Content-Type': 'application/json',
             'X-Algolia-Application-Id': 'M71W3IRVX3',
-            'X-Algolia-API-Key': process.env.ALGOLIA_API_KEY
+            'X-Algolia-API-Key': algoliaApiKey
           },
           timeout: 10000
         })
@@ -1344,6 +1373,7 @@ app.get('/api/settings', async (req, res) => {
     
     let settings = {
       openai_api_key: process.env.OPENAI_API_KEY ? `${process.env.OPENAI_API_KEY.substring(0, 8)}... (from environment)` : '',
+      algolia_api_key: process.env.ALGOLIA_API_KEY ? `${process.env.ALGOLIA_API_KEY.substring(0, 8)}... (from environment)` : '',
       confidence_threshold: 70,
       scraping_interval: 24
     }
@@ -1371,19 +1401,26 @@ app.get('/api/settings', async (req, res) => {
 
 app.post('/api/settings', async (req, res) => {
   try {
-    const { openai_api_key, confidence_threshold, scraping_interval } = req.body
+    const { openai_api_key, algolia_api_key, confidence_threshold, scraping_interval } = req.body
     
-    // Sanitize the API key if provided
-    const cleanApiKey = openai_api_key ? 
+    // Sanitize the API keys if provided
+    const cleanOpenaiApiKey = openai_api_key ? 
       openai_api_key
         .replace(/[\u200B-\u200D\uFEFF]/g, '') // Remove zero-width spaces
         .replace(/[^\x20-\x7E]/g, '') // Remove non-printable characters
         .trim() : ''
     
+    const cleanAlgoliaApiKey = algolia_api_key ? 
+      algolia_api_key
+        .replace(/[\u200B-\u200D\uFEFF]/g, '') // Remove zero-width spaces
+        .replace(/[^\x20-\x7E]/g, '') // Remove non-printable characters  
+        .trim() : ''
+    
     const settingsFile = path.join(process.cwd(), 'settings.json')
     
     const settings = {
-      openai_api_key: cleanApiKey,
+      openai_api_key: cleanOpenaiApiKey,
+      algolia_api_key: cleanAlgoliaApiKey,
       confidence_threshold,
       scraping_interval
     }
@@ -1442,6 +1479,25 @@ app.post('/api/settings/test-openai', async (req, res) => {
   } catch (error) {
     console.error('Error testing OpenAI API key:', error)
     res.status(500).json({ error: 'Failed to test API key' })
+  }
+})
+
+// Catch-all handler for React Router (must be last)
+app.get('*', (req, res) => {
+  // Don't serve index.html for API routes
+  if (req.path.startsWith('/api')) {
+    return res.status(404).json({ error: 'API endpoint not found' })
+  }
+  
+  const indexPath = path.join(distPath, 'index.html')
+  if (fs.existsSync(indexPath)) {
+    res.sendFile(indexPath)
+  } else {
+    res.status(404).send(`
+      <h1>Application files not found</h1>
+      <p>Make sure the 'dist' folder is in the correct location.</p>
+      <p>Looking for: ${indexPath}</p>
+    `)
   }
 })
 

@@ -111,8 +111,8 @@ function CompetitorCard({
           <p className="text-gray-500">Updated {lastUpdated}</p>
         </div>
         <div className="text-right">
-          <p className={`font-medium ${avgPriceDiff > 0 ? 'text-red-600' : 'text-green-600'}`}>
-            {avgPriceDiff > 0 ? '+' : ''}{avgPriceDiff.toFixed(1)}% avg
+          <p className={`font-medium ${(avgPriceDiff || 0) > 0 ? 'text-red-600' : 'text-green-600'}`}>
+            {(avgPriceDiff || 0) > 0 ? '+' : ''}{(avgPriceDiff || 0).toFixed(1)}% avg
           </p>
         </div>
       </div>
@@ -280,7 +280,7 @@ export default function Dashboard() {
                       alert.alert_type === 'price_increase' ? 'bg-green-100 text-green-800' : 
                       'bg-blue-100 text-blue-800'
                     }`}>
-                      {alert.alert_type.replace('_', ' ')}
+                      {(alert.alert_type || 'unknown').replace('_', ' ')}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">

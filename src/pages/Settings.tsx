@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 
 interface SettingsData {
   openai_api_key: string
+  algolia_api_key: string
   confidence_threshold: number
   scraping_interval: number
 }
@@ -22,6 +23,7 @@ interface EmbeddingProgress {
 export default function Settings() {
   const [settings, setSettings] = useState<SettingsData>({
     openai_api_key: '',
+    algolia_api_key: '',
     confidence_threshold: 70,
     scraping_interval: 24
   })
@@ -29,7 +31,8 @@ export default function Settings() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
-  const [showApiKey, setShowApiKey] = useState(false)
+  const [showOpenaiApiKey, setShowOpenaiApiKey] = useState(false)
+  const [showAlgoliaApiKey, setShowAlgoliaApiKey] = useState(false)
   
   // Embedding generation state
   const [embeddingProgress, setEmbeddingProgress] = useState<EmbeddingProgress | null>(null)
@@ -271,7 +274,7 @@ export default function Settings() {
               <div className="flex gap-2">
                 <div className="flex-1 relative">
                   <input
-                    type={showApiKey ? "text" : "password"}
+                    type={showOpenaiApiKey ? "text" : "password"}
                     value={settings.openai_api_key}
                     onChange={(e) => {
                       // Sanitize input - remove invisible characters
@@ -287,10 +290,10 @@ export default function Settings() {
                   />
                   <button
                     type="button"
-                    onClick={() => setShowApiKey(!showApiKey)}
+                    onClick={() => setShowOpenaiApiKey(!showOpenaiApiKey)}
                     className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
                   >
-                    {showApiKey ? (
+                    {showOpenaiApiKey ? (
                       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21" />
                       </svg>
@@ -315,6 +318,61 @@ export default function Settings() {
                 {settings.openai_api_key.includes('(from environment)') && (
                   <span className="block text-blue-600 mt-1">
                     ✓ Currently using API key from environment variable OPENAI_API_KEY
+                  </span>
+                )}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Algolia Configuration */}
+        <div className="bg-white border border-gray-200 rounded-lg p-6">
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">iDrinkCoffee Integration</h2>
+          <div className="grid gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Algolia API Key
+                <span className="text-yellow-500 ml-1">*</span>
+              </label>
+              <div className="flex gap-2">
+                <div className="flex-1 relative">
+                  <input
+                    type={showAlgoliaApiKey ? "text" : "password"}
+                    value={settings.algolia_api_key}
+                    onChange={(e) => {
+                      const cleanValue = e.target.value
+                        .replace(' (from environment)', '')
+                        .replace(/[\u200B-\u200D\uFEFF]/g, '') // Remove zero-width spaces
+                        .replace(/[^\x20-\x7E]/g, '') // Remove non-printable characters
+                      setSettings(prev => ({ ...prev, algolia_api_key: cleanValue }))
+                    }}
+                    placeholder="Enter Algolia API key..."
+                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                    readOnly={settings.algolia_api_key.includes('(from environment)')}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowAlgoliaApiKey(!showAlgoliaApiKey)}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  >
+                    {showAlgoliaApiKey ? (
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21" />
+                      </svg>
+                    ) : (
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                      </svg>
+                    )}
+                  </button>
+                </div>
+              </div>
+              <p className="text-xs text-gray-500 mt-1">
+                Required to fetch real iDrinkCoffee products from Algolia. Without this, local sample data will be used.
+                {settings.algolia_api_key.includes('(from environment)') && (
+                  <span className="block text-blue-600 mt-1">
+                    ✓ Currently using API key from environment variable ALGOLIA_API_KEY
                   </span>
                 )}
               </p>

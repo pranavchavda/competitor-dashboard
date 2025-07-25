@@ -1,0 +1,239 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Product {
+  id            String   @id @default(cuid())
+  externalId    String   // Shopify product ID or other external ID
+  source        String   // "idc", "home_coffee_solutions", "kitchen_barista", "cafe_liegeois"
+  title         String
+  vendor        String?  // Brand name (ECM, Profitec, Eureka)
+  productType   String?  // "espresso", "grinder", etc.
+  handle        String?  // Shopify handle/slug
+  sku           String?
+  price         Float?
+  compareAtPrice Float?
+  available     Boolean  @default(true)
+  imageUrl      String?
+  url           String?  // Product page URL
+  description   String?
+  
+  // Features extracted for matching
+  features      String?  // JSON string of extracted features
+  
+  // Embeddings for semantic similarity (stored as JSON array)
+  embedding          String? // JSON array of combined product embedding vector
+  titleEmbedding     String? // JSON array of embedding vector
+  featuresEmbedding  String? // JSON array of features embedding
+  
+  // Metadata
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  lastScrapedAt DateTime @default(now())
+  
+  // Relations
+  variants      ProductVariant[]
+  asIdcProduct  ProductMatch[] @relation("IdcProduct")
+  asCompetitorProduct ProductMatch[] @relation("CompetitorProduct")
+  priceHistory  PriceHistory[]
+  
+  @@unique([externalId, source])
+  @@index([source])
+  @@index([vendor])
+  @@index([productType])
+  @@index([available])
+}
+
+model ProductVariant {
+  id          String  @id @default(cuid())
+  externalId  String  // Shopify variant ID
+  productId   String
+  title       String?
+  sku         String?
+  price       Float?
+  compareAtPrice Float?
+  available   Boolean @default(true)
+  inventoryQuantity Int?
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  product     Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  
+  @@unique([externalId, productId])
+}
+
+model ProductMatch {
+  id                    String   @id @default(cuid())
+  idcProductId          String
+  competitorProductId   String
+  source                String   // Competitor source
+  
+  // Similarity scores
+  overallScore          Float    // Overall confidence score (0-1)
+  titleSimilarity       Float?   // Title similarity score
+  brandSimilarity       Float?   // Brand/vendor similarity score
+  typeSimilarity        Float?   // Product type similarity score
+  priceSimilarity       Float?   // Price proximity score
+  embeddingSimilarity   Float?   // Embedding cosine similarity
+  
+  // Price analysis
+  priceDifference       Float?   // IDC price - competitor price
+  priceDifferencePercent Float?  // Percentage difference
+  
+  // MAP Violation Tracking
+  isMapViolation        Boolean  @default(false) // Competitor price < IDC price
+  violationSeverity     Float?   // Percentage below IDC price (positive = violation)
+  violationAmount       Float?   // Dollar amount below IDC price
+  firstViolationDate    DateTime? // When this violation first occurred
+  lastChecked           DateTime @default(now()) // Last price check
+  
+  // Status
+  isManualMatch         Boolean  @default(false) // User confirmed match
+  isRejected           Boolean  @default(false) // User rejected match
+  confidence           String   @default("low") // "low", "medium", "high"
+  
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+  
+  idcProduct           Product  @relation("IdcProduct", fields: [idcProductId], references: [id], onDelete: Cascade)
+  competitorProduct    Product  @relation("CompetitorProduct", fields: [competitorProductId], references: [id], onDelete: Cascade)
+  violationHistory     MapViolationHistory[]
+  
+  @@unique([idcProductId, competitorProductId])
+  @@index([source])
+  @@index([confidence])
+  @@index([overallScore])
+  @@index([isMapViolation])
+  @@index([violationSeverity])
+}
+
+model PriceHistory {
+  id        String   @id @default(cuid())
+  productId String
+  price     Float
+  compareAtPrice Float?
+  available Boolean  @default(true)
+  timestamp DateTime @default(now())
+  
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  
+  @@index([productId, timestamp])
+}
+
+model Alert {
+  id          String   @id @default(cuid())
+  type        String   // "price_drop", "price_increase", "new_product", "out_of_stock"
+  title       String
+  message     String
+  severity    String   @default("medium") // "low", "medium", "high", "critical"
+  
+  // Related data
+  productId   String?  // Associated product if applicable
+  matchId     String?  // Associated product match if applicable
+  source      String?  // Competitor source
+  
+  // Price change data
+  oldPrice    Float?
+  newPrice    Float?
+  priceChange Float?   // Price difference
+  
+  // Status
+  status      String   @default("unread") // "unread", "read", "dismissed", "resolved"
+  isRead      Boolean  @default(false)
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@index([status])
+  @@index([type])
+  @@index([severity])
+  @@index([createdAt])
+}
+
+model ScrapeJob {
+  id          String   @id @default(cuid())
+  source      String   // Competitor source
+  status      String   @default("pending") // "pending", "running", "completed", "failed"
+  
+  // Results
+  productsFound    Int?
+  productsUpdated  Int?
+  productsCreated  Int?
+  errors          String? // JSON array of errors
+  
+  // Timing
+  startedAt   DateTime?
+  completedAt DateTime?
+  createdAt   DateTime @default(now())
+  
+  @@index([source, status])
+  @@index([createdAt])
+}
+
+model MapViolationHistory {
+  id                String       @id @default(cuid())
+  productMatchId    String
+  
+  // Violation Details
+  violationType     String       // "new_violation", "price_change", "resolved"
+  competitorPrice   Float
+  idcPrice          Float
+  violationAmount   Float        // How much below IDC price
+  violationPercent  Float        // Percentage below IDC price
+  
+  // Context
+  previousPrice     Float?       // Previous competitor price
+  priceChange       Float?       // Change from previous price
+  
+  // Evidence
+  screenshotUrl     String?      // URL to screenshot evidence
+  competitorUrl     String?      // Direct link to competitor product page
+  notes            String?       // Additional violation notes
+  
+  // Metadata
+  detectedAt       DateTime     @default(now())
+  source           String       // Competitor source
+  reportedBy       String?      // Who reported/detected this
+  
+  productMatch     ProductMatch @relation(fields: [productMatchId], references: [id], onDelete: Cascade)
+  
+  @@index([productMatchId])
+  @@index([violationType])
+  @@index([detectedAt])
+  @@index([source])
+}
+
+model Brand {
+  id                String   @id @default(cuid())
+  name              String   @unique // "ECM", "Profitec", "Eureka"
+  displayName       String   // "ECM Espresso Coffee Machines"
+  isActive          Boolean  @default(true)
+  
+  // Monitoring Settings
+  enableMonitoring  Boolean  @default(true)
+  alertThreshold    Float?   // Alert when violation exceeds this percentage
+  priorityLevel     String   @default("medium") // "low", "medium", "high", "critical"
+  
+  // MAP Settings
+  enforcementLevel  String   @default("standard") // "lenient", "standard", "strict"
+  gracePerioHours   Int?     // Hours before violation becomes actionable
+  
+  // Contact Info
+  contactEmail      String?  // Brand contact for violations
+  escalationEmail   String?  // Escalation contact
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  @@index([isActive])
+  @@index([enableMonitoring])
+}

@@ -37,7 +37,7 @@ async function main() {
   // Wait a bit for server to start, then launch Electron
   setTimeout(() => {
     console.log('🖥️  Launching Electron window...')
-    const electronProcess = spawn('electron', ['.'], {
+    const electronProcess = spawn('electron', ['.', '--no-sandbox', '--disable-gpu'], {
       stdio: 'inherit',
       detached: false
     })
