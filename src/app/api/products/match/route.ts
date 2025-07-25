@@ -165,9 +165,12 @@ async function calculateEnhancedSimilarity(
       const embedding1 = JSON.parse(product1Embeddings.titleEmbedding) as number[]
       const embedding2 = JSON.parse(product2Embeddings.titleEmbedding) as number[]
       embeddingSimilarity = calculateCosineSimilarity(embedding1, embedding2)
+      console.log(`🤖 EMBEDDING SIMILARITY: ${embeddingSimilarity.toFixed(3)} for "${product1.title}" vs "${product2.title}"`)
     } catch (error) {
       console.error('Error calculating embedding similarity:', error)
     }
+  } else {
+    console.log(`⚠️  NO EMBEDDINGS: P1=${!!product1Embeddings?.titleEmbedding}, P2=${!!product2Embeddings?.titleEmbedding} for "${product1.title}" vs "${product2.title}"`)
   }
   
   // Weighted combination of similarity scores
@@ -311,11 +314,15 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
+    console.log(`🔍 Starting MAP enforcement analysis...`)
+    
     // Clear existing matches and regenerate
     await prisma.productMatch.deleteMany()
+    console.log(`🗑️  Cleared existing product matches for fresh MAP analysis`)
     
     // Get IDC products from Algolia directly (avoid internal fetch)
     let idcProducts;
+    console.log(`📡 Fetching IDC products from Algolia...`)
     try {
       const algoliaResponse = await fetch('https://M71W3IRVX3-dsn.algolia.net/1/indexes/idc_products/query', {
         method: 'POST',
@@ -353,6 +360,10 @@ export async function POST(request: Request) {
         }
       }
     })
+    
+    // Check embedding coverage
+    const withEmbeddings = competitorProducts.filter(p => p.titleEmbedding && p.featuresEmbedding).length
+    console.log(`📊 Competitor Product Embeddings: ${withEmbeddings}/${competitorProducts.length} products have embeddings`)
     
     const matches: ProductMatch[] = []
     let totalMatches = 0
@@ -410,13 +421,35 @@ export async function POST(request: Request) {
       // Generate embeddings for IDC product if needed
       let idcEmbeddings: { titleEmbedding: string; featuresEmbedding: string } | null = null
       try {
-        if (process.env.OPENAI_API_KEY) {
+        // Check if OpenAI API key is available (either from settings or environment)
+        let hasApiKey = false
+        try {
+          const fs = require('fs')
+          const path = require('path')
+          const settingsFile = path.join(process.cwd(), 'settings.json')
+          
+          if (process.env.OPENAI_API_KEY) {
+            hasApiKey = true
+          } else if (fs.existsSync(settingsFile)) {
+            const settings = JSON.parse(fs.readFileSync(settingsFile, 'utf8'))
+            hasApiKey = !!(settings.openai_api_key)
+          }
+        } catch (settingsError) {
+          console.log('Settings check failed:', settingsError)
+          hasApiKey = !!(process.env.OPENAI_API_KEY)
+        }
+        
+        if (hasApiKey) {
+          console.log(`🤖 Generating embeddings for IDC product: ${idcProd.title}`)
           idcEmbeddings = await createProductEmbeddings({
             title: idcProd.title,
             vendor: idcProd.vendor,
             productType: idcProd.product_type,
             price: idcProd.price
           })
+          console.log(`✓ Generated embeddings for IDC product: ${idcProd.title}`)
+        } else {
+          console.log(`⚠️  No OpenAI API key found - skipping embeddings for: ${idcProd.title}`)
         }
       } catch (error) {
         console.error('Error creating IDC product embeddings:', error)
@@ -435,6 +468,12 @@ export async function POST(request: Request) {
       
       console.log(`🎯 IDC Product: "${idcProd.title}" (Brand: ${idcBrand}) - Found ${matchingCompetitorProducts.length} same-brand competitors`)
       
+      // Debug: Show all competitor brands for this IDC product
+      if (matchingCompetitorProducts.length === 0) {
+        const allCompetitorBrands = competitorProducts.map((comp: any) => extractBrand(comp.title).toLowerCase()).slice(0, 10)
+        console.log(`   No matches found. Competitor brands available: ${[...new Set(allCompetitorBrands)].join(', ')}`)
+      }
+      
       for (const compProduct of matchingCompetitorProducts) {
         const compProd: Product = {
           id: compProduct.id,
@@ -448,6 +487,11 @@ export async function POST(request: Request) {
         }
         
         // Calculate enhanced similarity using embeddings
+        console.log(`🔍 CHECKING EMBEDDINGS for "${idcProd.title}" vs "${compProd.title}":`)
+        console.log(`   IDC embeddings: ${idcEmbeddings ? 'YES' : 'NO'}`)
+        console.log(`   Competitor titleEmbedding: ${compProduct.titleEmbedding ? 'YES' : 'NO'}`)
+        console.log(`   Competitor featuresEmbedding: ${compProduct.featuresEmbedding ? 'YES' : 'NO'}`)
+        
         const similarities = await calculateEnhancedSimilarity(
           idcProd,
           compProd,
@@ -458,13 +502,18 @@ export async function POST(request: Request) {
           } : undefined
         )
         
+        console.log(`   Final embedding similarity: ${similarities.embeddingSimilarity}`)
+        console.log(`   Overall score: ${similarities.overallScore.toFixed(3)}`)
+        
         // Log some examples for debugging
         if (totalMatches < 3) {
           console.log(`🔍 Sample Match: "${idcProd.title}" vs "${compProd.title}"`)
           console.log(`   Brands: "${extractBrand(idcProd.title)}" vs "${extractBrand(compProd.title)}"`)
           console.log(`   Prices: $${idcProd.price} vs $${compProd.price}`)
+          console.log(`   IDC Embeddings: ${idcEmbeddings ? 'YES' : 'NO'}`)
+          console.log(`   Competitor Embeddings: ${compProduct.titleEmbedding ? 'YES' : 'NO'}`)
           console.log(`   Overall Score: ${similarities.overallScore.toFixed(3)}`)
-          console.log(`   Brand: ${similarities.brandSimilarity}, Title: ${similarities.titleSimilarity}`)
+          console.log(`   Brand: ${similarities.brandSimilarity}, Title: ${similarities.titleSimilarity}, Embedding: ${similarities.embeddingSimilarity}`)
         }
         
         if (similarities.overallScore > 0.1) { // Lower confidence threshold for testing
@@ -567,9 +616,21 @@ export async function POST(request: Request) {
     // Sort matches by best confidence
     matches.sort((a, b) => (b.best_match?.confidence || 0) - (a.best_match?.confidence || 0))
     
+    // Count embedding usage
+    const idcProductsWithEmbeddings = idcProducts.filter(p => {
+      // Check if we would have embeddings for this product
+      return process.env.OPENAI_API_KEY || require('fs').existsSync(require('path').join(process.cwd(), 'settings.json'))
+    }).length
+    
+    const competitorProductsWithEmbeddings = competitorProducts.filter((p: any) => 
+      p.titleEmbedding && p.featuresEmbedding
+    ).length
+
     console.log(`🎯 MATCHING SUMMARY:`)
     console.log(`- IDC Products: ${idcProducts.length}`)
     console.log(`- Competitor Products: ${competitorProducts.length}`)
+    console.log(`- Competitor Products with Embeddings: ${competitorProductsWithEmbeddings}`)
+    console.log(`- API Key Available: ${!!(process.env.OPENAI_API_KEY || require('fs').existsSync(require('path').join(process.cwd(), 'settings.json')))}`)
     console.log(`- Matches Created: ${totalMatches}`)
     console.log(`- Preview Matches: ${matches.length}`)
 

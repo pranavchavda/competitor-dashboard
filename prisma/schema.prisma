@@ -30,6 +30,7 @@ model Product {
   features      String?  // JSON string of extracted features
   
   // Embeddings for semantic similarity (stored as JSON array)
+  embedding          String? // JSON array of combined product embedding vector
   titleEmbedding     String? // JSON array of embedding vector
   featuresEmbedding  String? // JSON array of features embedding
   

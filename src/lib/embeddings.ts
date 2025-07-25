@@ -1,19 +1,43 @@
 import OpenAI from 'openai'
 import { prisma } from './db'
+import fs from 'fs'
+import path from 'path'
 
 // Initialize OpenAI client lazily
 let openai: OpenAI | null = null
 
+function loadAPIKeyFromSettings(): string | null {
+  try {
+    const settingsFile = path.join(process.cwd(), 'settings.json')
+    if (fs.existsSync(settingsFile)) {
+      const settings = JSON.parse(fs.readFileSync(settingsFile, 'utf8'))
+      return settings.openai_api_key || null
+    }
+  } catch (error) {
+    console.error('Error loading API key from settings:', error)
+  }
+  return null
+}
+
 function getOpenAIClient(): OpenAI {
   if (!openai) {
-    if (!process.env.OPENAI_API_KEY) {
-      throw new Error('OPENAI_API_KEY environment variable is required')
+    // Try to get API key from settings first, then environment variable
+    const apiKey = loadAPIKeyFromSettings() || process.env.OPENAI_API_KEY
+    
+    if (!apiKey) {
+      throw new Error('OpenAI API key not found. Please configure it in Settings or set OPENAI_API_KEY environment variable.')
     }
+    
     openai = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY,
+      apiKey: apiKey,
     })
   }
   return openai
+}
+
+// Reset client when API key changes
+export function resetOpenAIClient(): void {
+  openai = null
 }
 
 // Feature extraction for coffee equipment

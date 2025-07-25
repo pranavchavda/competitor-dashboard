@@ -1,6 +1,21 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { batchUpdateEmbeddings } from '@/lib/embeddings'
+import fs from 'fs'
+import path from 'path'
+
+function loadAPIKeyFromSettings(): string | null {
+  try {
+    const settingsFile = path.join(process.cwd(), 'settings.json')
+    if (fs.existsSync(settingsFile)) {
+      const settings = JSON.parse(fs.readFileSync(settingsFile, 'utf8'))
+      return settings.openai_api_key || null
+    }
+  } catch (error) {
+    console.error('Error loading API key from settings:', error)
+  }
+  return null
+}
 
 export async function POST(request: Request) {
   try {
@@ -9,9 +24,11 @@ export async function POST(request: Request) {
     const limit = parseInt(searchParams.get('limit') || '50') // Batch size
     const dryRun = searchParams.get('dry_run') === 'true'
     
-    if (!process.env.OPENAI_API_KEY) {
+    // Check if OpenAI API key is available (either from settings or environment)
+    const apiKey = loadAPIKeyFromSettings() || process.env.OPENAI_API_KEY
+    if (!apiKey) {
       return NextResponse.json(
-        { error: 'OpenAI API key not configured' },
+        { error: 'OpenAI API key not configured. Please configure it in Settings or set OPENAI_API_KEY environment variable.' },
         { status: 400 }
       )
     }
@@ -152,7 +169,7 @@ export async function GET(request: Request) {
         source: s.source,
         count: s._count.id
       })),
-      openai_configured: !!process.env.OPENAI_API_KEY,
+      openai_configured: !!(loadAPIKeyFromSettings() || process.env.OPENAI_API_KEY),
       generated_at: new Date().toISOString()
     })
   } catch (error) {

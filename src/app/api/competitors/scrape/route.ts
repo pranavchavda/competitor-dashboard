@@ -124,9 +124,11 @@ async function storeProductInDB(product: ShopifyProduct, source: string) {
     // Generate embeddings if OpenAI API key is available
     let embeddings: { titleEmbedding: string; featuresEmbedding: string; extractedFeatures: string } | null = null
     
-    // Generate embeddings if OpenAI API key is available
+    // Generate embeddings if OpenAI API key is available (from settings or environment)
     try {
-      if (process.env.OPENAI_API_KEY) {
+      // Check if OpenAI API key is available (either from settings or environment)
+      const hasApiKey = process.env.OPENAI_API_KEY || require('fs').existsSync(require('path').join(process.cwd(), 'settings.json'))
+      if (hasApiKey) {
         embeddings = await createProductEmbeddings({
           title: product.title,
           vendor: product.vendor,
@@ -135,9 +137,11 @@ async function storeProductInDB(product: ShopifyProduct, source: string) {
           features: JSON.stringify(features)
         })
         console.log(`✓ Generated embeddings for product: ${product.title}`)
+      } else {
+        console.log(`⚠️  Skipping embeddings for ${product.title} - no OpenAI API key configured`)
       }
     } catch (error: any) {
-      console.error(`Error generating embeddings for product ${product.id}:`, error.message || error)
+      console.error(`❌ Error generating embeddings for product ${product.id}:`, error.message || error)
       // Continue without embeddings
     }
     
