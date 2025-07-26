@@ -1,0 +1,93 @@
+name: Build Windows Portable Distribution
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch: # Allow manual triggering
+
+jobs:
+  build-windows-portable:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '22'
+    
+    - name: Setup pnpm
+      uses: pnpm/action-setup@v4
+      with:
+        version: latest
+    
+    - name: Install dependencies
+      run: pnpm install
+    
+    - name: Generate Prisma client
+      run: npx prisma generate
+    
+    - name: Build Windows portable distribution
+      run: pnpm run build:windows-portable
+    
+    - name: Create portable distribution archive
+      run: |
+        cd dist-windows-portable
+        zip -r ../competitor-dashboard-windows-portable.zip .
+        cd ..
+        ls -la competitor-dashboard-windows-portable.zip
+    
+    - name: Upload Windows portable distribution
+      uses: actions/upload-artifact@v4
+      with:
+        name: competitor-dashboard-windows-portable
+        path: competitor-dashboard-windows-portable.zip
+        retention-days: 30
+    
+    - name: Create Release (on main branch push)
+      if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: windows-portable-${{ github.run_number }}
+        release_name: Windows Portable Distribution v${{ github.run_number }}
+        body: |
+          ## Windows Portable Distribution
+          
+          This release contains a portable Windows distribution of the Competitor Dashboard that requires no Node.js installation.
+          
+          ### How to use:
+          1. Download `competitor-dashboard-windows-portable.zip`
+          2. Extract the archive to any folder
+          3. Double-click `Competitor Dashboard.bat` to start the application
+          4. Your browser will open automatically to the dashboard
+          
+          ### What's included:
+          - Portable Node.js runtime (v22.12.0)
+          - Complete web application
+          - Local SQLite database
+          - All dependencies bundled
+          
+          ### System Requirements:
+          - Windows 7 or later
+          - 4GB RAM recommended
+          - 100MB free disk space
+        draft: false
+        prerelease: false
+      id: create_release
+    
+    - name: Upload Release Asset
+      if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ./competitor-dashboard-windows-portable.zip
+        asset_name: competitor-dashboard-windows-portable.zip
+        asset_content_type: application/zip
