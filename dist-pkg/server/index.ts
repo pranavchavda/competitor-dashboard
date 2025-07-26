@@ -20,9 +20,9 @@ const port = process.env.PORT || 3005
 const server = createServer(app)
 const wss = new WebSocketServer({ server })
 
-// Middleware with Tauri-specific CORS
+// Middleware with standard CORS
 app.use(cors({
-  origin: ['http://localhost:3000', 'https://tauri.localhost', 'tauri://localhost'],
+  origin: ['http://localhost:3000'],
   credentials: true,
   optionsSuccessStatus: 200
 }))

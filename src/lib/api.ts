@@ -1,15 +1,7 @@
-// API utility for handling both Tauri and browser environments
+// API utility for making HTTP requests
 
 const getBaseUrl = (): string => {
-  // Check if running in Tauri app
-  if (typeof window !== 'undefined' && window.__TAURI__) {
-    return 'http://localhost:3005'
-  }
-  // Check if running in Electron app
-  if (typeof window !== 'undefined' && window.__ELECTRON__) {
-    return 'http://localhost:3005'
-  }
-  // In browser, use relative URLs (Vite proxy will handle it)
+  // Use relative URLs - the server serves the frontend directly
   return ''
 }
 

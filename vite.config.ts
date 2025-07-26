@@ -28,5 +28,5 @@ export default defineConfig({
     sourcemap: true,
   },
   clearScreen: false,
-  envPrefix: ['VITE_', 'TAURI_'],
+  envPrefix: ['VITE_'],
 })
