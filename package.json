@@ -10,16 +10,12 @@
     "server:dev": "tsx --watch server/index.ts",
     "server:build": "tsc server/index.ts --outDir dist-server",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
-    "tauri": "tauri",
-    "tauri:dev": "tauri dev",
-    "tauri:build": "tauri build",
-    "electron:dev": "concurrently \"pnpm run server:dev\" \"electron .\"",
-    "electron:build": "pnpm run build && electron-builder",
-    "electron:dist": "electron-builder --publish=never",
-    "pkg:build": "pnpm run build && pkg real-standalone.cjs --targets node18-win-x64,node18-macos-x64,node18-linux-x64 --out-path dist-pkg",
-    "pkg:build-win": "pnpm run build && pkg real-standalone.cjs --targets node18-win-x64 --out-path dist-pkg",
-    "pkg:build-mac": "pnpm run build && pkg real-standalone.cjs --targets node18-macos-x64 --out-path dist-pkg",
-    "pkg:build-linux": "pnpm run build && pkg real-standalone.cjs --targets node18-linux-x64 --out-path dist-pkg"
+    "pkg:build": "pnpm run build && pkg real-standalone.cjs --targets node20-win-x64,node20-macos-x64,node20-linux-x64 --out-path dist-pkg",
+    "pkg:build-win": "pnpm run build && pkg real-standalone.cjs --targets node20-win-x64 --out-path dist-pkg",
+    "pkg:build-mac": "pnpm run build && pkg real-standalone.cjs --targets node20-macos-x64 --out-path dist-pkg",
+    "pkg:build-linux": "pnpm run build && pkg real-standalone.cjs --targets node20-linux-x64 --out-path dist-pkg",
+    "build:windows-portable": "node build-windows-portable.js",
+    "build:all": "pnpm run pkg:build-mac && pnpm run pkg:build-linux && pnpm run build:windows-portable"
   },
   "dependencies": {
     "@headlessui/react": "^2.2.4",
@@ -31,6 +27,7 @@
     "cheerio": "^1.0.0",
     "clsx": "^2.1.1",
     "cors": "^2.8.5",
+    "esbuild": "^0.25.8",
     "express": "^4.18.2",
     "framer-motion": "^11.2.6",
     "js-cookie": "^3.0.5",
@@ -44,7 +41,6 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.1.7",
-    "@tauri-apps/cli": "^2.7.1",
     "@types/cors": "^2.8.17",
     "@types/express": "^4.17.21",
     "@types/node": "^20",
@@ -54,8 +50,6 @@
     "@typescript-eslint/parser": "^7.2.0",
     "@vitejs/plugin-react": "^4.2.1",
     "concurrently": "^8.2.2",
-    "electron": "^37.2.4",
-    "electron-builder": "^24.13.3",
     "eslint": "^8.57.0",
     "eslint-plugin-react-hooks": "^4.6.0",
     "eslint-plugin-react-refresh": "^0.4.6",
@@ -68,48 +62,6 @@
     "typescript": "^5.2.2",
     "vite": "^5.2.0"
   },
-  "main": "electron-main.cjs",
-  "build": {
-    "appId": "com.idrinkcoffee.competitordash",
-    "productName": "Competitor Dashboard",
-    "directories": {
-      "output": "dist-electron"
-    },
-    "files": [
-      "dist/**/*",
-      "electron-main.js",
-      "electron-preload.js",
-      "server/**/*",
-      "prisma/**/*",
-      "package.json",
-      "node_modules/**/*",
-      ".env"
-    ],
-    "extraResources": [
-      {
-        "from": "competitor_products.db",
-        "to": "competitor_products.db",
-        "filter": [
-          "**/*"
-        ]
-      }
-    ],
-    "win": {
-      "target": "nsis",
-      "icon": "src-tauri/icons/icon.ico"
-    },
-    "mac": {
-      "target": "dmg",
-      "icon": "src-tauri/icons/icon.icns"
-    },
-    "linux": {
-      "target": [
-        "AppImage",
-        "deb"
-      ],
-      "icon": "src-tauri/icons/128x128.png"
-    }
-  },
   "pkg": {
     "assets": [
       "dist/**/*",
@@ -119,9 +71,9 @@
       ".env"
     ],
     "targets": [
-      "node18-win-x64",
-      "node18-macos-x64", 
-      "node18-linux-x64"
+      "node20-win-x64",
+      "node20-macos-x64",
+      "node20-linux-x64"
     ],
     "outputPath": "dist-pkg"
   }

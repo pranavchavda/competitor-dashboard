@@ -9,9 +9,22 @@ import fs from 'fs'
 import path from 'path'
 import { fileURLToPath } from 'url'
 
-// ES module equivalent of __dirname
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = path.dirname(__filename)
+// ES module equivalent of __dirname - handle both ES modules and CommonJS
+let __filename: string
+let __dirname: string
+
+try {
+  // Try ES module approach first
+  __filename = fileURLToPath(import.meta.url)
+  __dirname = path.dirname(__filename)
+} catch (error) {
+  // Fallback for CommonJS environment (when bundled)
+  // In CommonJS, we can use __filename and __dirname directly
+  // @ts-ignore - These are available in CommonJS
+  __filename = typeof __filename !== 'undefined' ? __filename : process.cwd() + '/server.js'
+  // @ts-ignore
+  __dirname = typeof __dirname !== 'undefined' ? __dirname : process.cwd()
+}
 
 const app = express()
 const port = process.env.PORT || 3005
@@ -20,9 +33,9 @@ const port = process.env.PORT || 3005
 const server = createServer(app)
 const wss = new WebSocketServer({ server })
 
-// Middleware with Tauri-specific CORS
+// Middleware with standard CORS
 app.use(cors({
-  origin: ['http://localhost:3000', 'https://tauri.localhost', 'tauri://localhost'],
+  origin: ['http://localhost:3000'],
   credentials: true,
   optionsSuccessStatus: 200
 }))

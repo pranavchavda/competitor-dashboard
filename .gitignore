@@ -48,3 +48,13 @@ src-tauri/gen/
 
 # Electron build artifacts
 dist-electron/
+
+# Portable distribution builds
+dist-windows-portable/
+dist-pkg/
+dist-server/
+dist-server-bundled.*
+
+# Archive files
+*.zip
+*.tar.gz
