@@ -15,7 +15,8 @@
     "pkg:build-mac": "pnpm run build && pkg real-standalone.cjs --targets node20-macos-x64 --out-path dist-pkg",
     "pkg:build-linux": "pnpm run build && pkg real-standalone.cjs --targets node20-linux-x64 --out-path dist-pkg",
     "build:windows-portable": "node build-windows-portable.js",
-    "build:all": "pnpm run pkg:build-mac && pnpm run pkg:build-linux && pnpm run build:windows-portable"
+    "build:windows-zip": "node build-windows-portable.js && bash create-windows-zip.sh",
+    "build:all": "pnpm run pkg:build-mac && pnpm run pkg:build-linux && pnpm run build:windows-zip"
   },
   "dependencies": {
     "@headlessui/react": "^2.2.4",

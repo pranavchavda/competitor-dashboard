@@ -108,10 +108,14 @@ async function startRealServer() {
     
     // Try to open browser automatically
     const open = (url) => {
-      const start = process.platform === 'darwin' ? 'open' : 
-                    process.platform === 'win32' ? 'start' : 'xdg-open'
       try {
-        spawn(start, [url], { detached: true, stdio: 'ignore' }).unref()
+        if (process.platform === 'win32') {
+          spawn('cmd', ['/c', 'start', url], { detached: true, stdio: 'ignore' }).unref()
+        } else if (process.platform === 'darwin') {
+          spawn('open', [url], { detached: true, stdio: 'ignore' }).unref()
+        } else {
+          spawn('xdg-open', [url], { detached: true, stdio: 'ignore' }).unref()
+        }
         console.log('🖥️  Browser should open automatically')
       } catch (error) {
         console.log('ℹ️  Could not auto-open browser. Please manually open the URL above.')

@@ -26,8 +26,22 @@ A cross-platform desktop application for monitoring competitor pricing across ma
 Visit the [Releases](https://github.com/pranavchavda/competitor-dashboard/releases) page to download:
 
 - **Linux**: AppImage, Deb, RPM packages
-- **Windows**: MSI installer + standalone EXE
+- **Windows**: MSI installer + standalone EXE + **Windows Portable ZIP**
 - **macOS**: Universal DMG (Intel + Apple Silicon)
+
+### Windows Portable Distribution
+
+For maximum compatibility and ease of deployment, use the **Windows Portable ZIP**:
+
+1. **Download**: `competitor-dashboard-windows-portable.zip` (87MB)
+2. **Extract**: Unzip to any folder (no installation required)
+3. **Run**: Double-click `Competitor Dashboard.bat`
+4. **Features**: 
+   - ✅ No Node.js installation required (includes portable runtime)
+   - ✅ Complete SQLite database with Prisma ORM
+   - ✅ All dependencies bundled
+   - ✅ Automatic browser opening
+   - ✅ Works on Windows 7+ (including Windows 11)
 
 ### Linux (AppImage)
 
@@ -89,6 +103,12 @@ npm run tauri:build
 
 # Multi-platform builds (via GitHub Actions)
 git push origin main
+
+# Build Windows Portable Distribution
+npm run build:windows-portable
+# OR manually:
+node build-windows-portable.js
+bash create-windows-zip.sh
 ```
 
 ## ⚙️ Configuration
@@ -186,6 +206,24 @@ This is a private tool for iDrinkCoffee.com, but contributions are welcome:
 2. **Empty Results**: Check internet connectivity and Algolia API
 3. **Slow Performance**: Increase confidence thresholds to reduce matches
 4. **Security Warnings**: App is not code-signed (future enhancement)
+
+### Windows Portable Issues
+
+**If the Windows portable app fails to start:**
+
+1. **Prisma Query Engine Missing**:
+   ```bash
+   # Run the fix script
+   bash fix-windows-query-engine.sh
+   ```
+
+2. **Module Resolution Errors**:
+   - Ensure you're running on native Windows (not WSL)
+   - Try the unbundled version: `bash create-unbundled-windows.sh`
+
+3. **Browser Won't Open**: 
+   - Manually navigate to `http://localhost:3005`
+   - Check Windows firewall settings
 
 ### Debug Endpoints
 

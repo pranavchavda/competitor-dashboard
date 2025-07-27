@@ -95,7 +95,7 @@ async function main() {
     console.log('🔧 Bundling server with esbuild...')
     // Use CommonJS format and only keep native/problematic modules external
     // Remove problematic import.meta.url definition that causes invalid URLs
-    execSync('npx esbuild server/index.ts --bundle --platform=node --target=node18 --format=cjs --outfile=dist-server-bundled.cjs --external:@prisma/client --external:sqlite3', { stdio: 'inherit' })
+    execSync('npx esbuild server/index.ts --bundle --platform=node --target=node18 --format=cjs --outfile=dist-server-bundled.cjs --external:sqlite3 --external:@prisma/engines', { stdio: 'inherit' })
     
     // Copy bundled server with .cjs extension to force CommonJS treatment
     fs.mkdirSync(path.join(OUTPUT_DIR, 'server'), { recursive: true })

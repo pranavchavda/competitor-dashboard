@@ -42,12 +42,26 @@ app.use(cors({
 app.use(express.json())
 
 // Serve static files from dist directory
-const distPath = path.join(__dirname, '../dist')
-if (fs.existsSync(distPath)) {
+// For bundled server, __dirname might not be correct, so try multiple paths
+const possibleDistPaths = [
+  path.join(__dirname, '../dist'),
+  path.join(process.cwd(), 'dist'),
+  path.join(__dirname, '../../dist')
+]
+
+let distPath = null
+for (const testPath of possibleDistPaths) {
+  if (fs.existsSync(testPath)) {
+    distPath = testPath
+    break
+  }
+}
+
+if (distPath) {
   app.use(express.static(distPath))
   console.log(`📁 Serving static files from: ${distPath}`)
 } else {
-  console.warn(`⚠️  Static files directory not found: ${distPath}`)
+  console.warn(`⚠️  Static files directory not found. Tried: ${possibleDistPaths.join(', ')}`)
 }
 
 // WebSocket connection handling
@@ -90,12 +104,35 @@ function getPrismaClient() {
 // Initialize OpenAI
 let openai: OpenAI | null = null
 function getOpenAIClient() {
-  if (!openai && process.env.OPENAI_API_KEY) {
-    openai = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY
-    })
+  if (!openai) {
+    // Try environment variable first
+    let apiKey = process.env.OPENAI_API_KEY
+    
+    // If not in environment, try settings file
+    if (!apiKey) {
+      try {
+        const settingsFile = path.join(process.cwd(), 'settings.json')
+        if (fs.existsSync(settingsFile)) {
+          const settings = JSON.parse(fs.readFileSync(settingsFile, 'utf8'))
+          apiKey = settings.openai_api_key
+        }
+      } catch (error) {
+        console.warn('Could not read OpenAI API key from settings:', error)
+      }
+    }
+    
+    if (apiKey) {
+      openai = new OpenAI({
+        apiKey: apiKey
+      })
+    }
   }
   return openai
+}
+
+// Reset OpenAI client (useful when settings change)
+function resetOpenAIClient() {
+  openai = null
 }
 
 // Helper functions
@@ -1164,8 +1201,9 @@ app.post('/api/debug/force-embeddings', async (req, res) => {
     const prismaClient = getPrismaClient()
     
     // Check API key
-    if (!process.env.OPENAI_API_KEY) {
-      return res.status(400).json({ error: 'OpenAI API key not found in environment variables' })
+    const openaiClient = getOpenAIClient()
+    if (!openaiClient) {
+      return res.status(400).json({ error: 'OpenAI API key not configured. Please set it in Settings.' })
     }
 
     // Get all products (including IDC products that need embeddings)
@@ -1439,6 +1477,9 @@ app.post('/api/settings', async (req, res) => {
     }
     
     fs.writeFileSync(settingsFile, JSON.stringify(settings, null, 2))
+    
+    // Reset OpenAI client to pick up new API key
+    resetOpenAIClient()
     
     res.json({ success: true, message: 'Settings saved successfully' })
   } catch (error) {
